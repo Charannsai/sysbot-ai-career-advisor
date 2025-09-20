@@ -14,8 +14,50 @@ const CareerSuggestions = () => {
     if (!skills.trim()) return;
     
     setIsLoading(true);
-    // Simulate API call - will be replaced with actual Gemini API
-    setTimeout(() => {
+    
+    try {
+      const response = await fetch('/.netlify/functions/career-suggestions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ skills }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        setSuggestions(data.suggestions);
+      } else {
+        console.error('API Error:', data.error);
+        // Fallback to mock data
+        setSuggestions([
+          {
+            title: "Software Engineer",
+            match: "92%",
+            description: "Build scalable applications and systems using your programming skills",
+            skillsUsed: ["JavaScript", "React", "Problem Solving"],
+            roadmap: ["Advanced React patterns", "Backend development", "System design"]
+          },
+          {
+            title: "UX Designer",
+            match: "85%",
+            description: "Create intuitive user experiences combining technical and design skills",
+            skillsUsed: ["Design Thinking", "User Research", "Frontend"],
+            roadmap: ["Design systems", "User research methods", "Prototyping tools"]
+          },
+          {
+            title: "Product Manager",
+            match: "78%",
+            description: "Lead product strategy leveraging technical understanding",
+            skillsUsed: ["Communication", "Analysis", "Technical Knowledge"],
+            roadmap: ["Product strategy", "Data analysis", "Stakeholder management"]
+          }
+        ]);
+      }
+    } catch (error) {
+      console.error('Network Error:', error);
+      // Fallback to mock data
       setSuggestions([
         {
           title: "Software Engineer",
@@ -23,24 +65,11 @@ const CareerSuggestions = () => {
           description: "Build scalable applications and systems using your programming skills",
           skillsUsed: ["JavaScript", "React", "Problem Solving"],
           roadmap: ["Advanced React patterns", "Backend development", "System design"]
-        },
-        {
-          title: "UX Designer",
-          match: "85%",
-          description: "Create intuitive user experiences combining technical and design skills",
-          skillsUsed: ["Design Thinking", "User Research", "Frontend"],
-          roadmap: ["Design systems", "User research methods", "Prototyping tools"]
-        },
-        {
-          title: "Product Manager",
-          match: "78%",
-          description: "Lead product strategy leveraging technical understanding",
-          skillsUsed: ["Communication", "Analysis", "Technical Knowledge"],
-          roadmap: ["Product strategy", "Data analysis", "Stakeholder management"]
         }
       ]);
+    } finally {
       setIsLoading(false);
-    }, 2000);
+    }
   };
 
   return (

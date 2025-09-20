@@ -53,20 +53,63 @@ const ChatInterview = () => {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    const newMessages = [...messages, userMessage];
     setCurrentMessage("");
     setIsLoading(true);
 
-    // Simulate AI response - will be replaced with actual Gemini API
-    setTimeout(() => {
-      const aiResponses = [
-        "That's a great answer! Can you describe a challenging project you've worked on and how you overcame obstacles?",
-        "Interesting perspective! Tell me about a time when you had to work with a difficult team member. How did you handle it?",
-        "Good insight! What are your greatest strengths and how would they benefit our team?",
-        "Thank you for sharing that. Where do you see yourself in 5 years, and how does this role align with your career goals?",
-        "Excellent response! Do you have any questions about the role or our company culture?"
+    try {
+      const response = await fetch('/.netlify/functions/chat-interview', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: currentMessage,
+          role: selectedRole,
+          conversationHistory: messages
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        const aiMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          type: 'ai',
+          content: data.response,
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, aiMessage]);
+      } else {
+        // Fallback to mock responses
+        const fallbackResponses = [
+          "That's a great answer! Can you describe a challenging project you've worked on and how you overcame obstacles?",
+          "Interesting perspective! Tell me about a time when you had to work with a difficult team member. How did you handle it?",
+          "Good insight! What are your greatest strengths and how would they benefit our team?",
+          "Thank you for sharing that. Where do you see yourself in 5 years, and how does this role align with your career goals?",
+          "Excellent response! Do you have any questions about the role or our company culture?"
+        ];
+        
+        const randomResponse = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
+        
+        const aiMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          type: 'ai',
+          content: randomResponse,
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, aiMessage]);
+      }
+    } catch (error) {
+      console.error('Network Error:', error);
+      // Fallback to mock responses
+      const fallbackResponses = [
+        "That's interesting! Can you tell me more about your experience with similar challenges?",
+        "Good point. How do you typically approach problem-solving in your work?",
+        "Thank you for sharing. What motivates you most in your professional work?"
       ];
-
-      const randomResponse = aiResponses[Math.floor(Math.random() * aiResponses.length)];
+      
+      const randomResponse = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
       
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -74,10 +117,10 @@ const ChatInterview = () => {
         content: randomResponse,
         timestamp: new Date()
       };
-
       setMessages(prev => [...prev, aiMessage]);
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

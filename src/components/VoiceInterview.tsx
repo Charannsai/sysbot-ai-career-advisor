@@ -47,27 +47,9 @@ const VoiceInterview = () => {
   }, []);
 
   const questions = {
-    "software-engineer": [
-      "Can you tell me about yourself and your experience with software development?",
-      "Describe a challenging technical problem you solved recently.",
-      "How do you approach debugging complex issues?",
-      "What programming languages and frameworks are you most comfortable with?",
-      "How do you stay updated with new technologies?"
-    ],
-    "product-manager": [
-      "Tell me about your experience in product management.",
-      "How do you prioritize features when resources are limited?",
-      "Describe a time when you had to make a difficult product decision.",
-      "How do you gather and incorporate user feedback?",
-      "What metrics do you use to measure product success?"
-    ],
-    "ux-designer": [
-      "Walk me through your design process from concept to delivery.",
-      "How do you approach user research and testing?",
-      "Describe a challenging design problem you solved.",
-      "How do you balance user needs with business requirements?",
-      "What design tools and methods do you prefer and why?"
-    ]
+    "software-engineer": [],
+    "product-manager": [],
+    "ux-designer": []
   };
 
   const speakText = (text: string) => {
@@ -81,7 +63,7 @@ const VoiceInterview = () => {
     
     utterance.onend = () => {
       setIsSpeaking(false);
-      if (isInterviewStarted) {
+      if (isInterviewStarted && !currentQuestion.includes("Thank you for completing")) {
         setTimeout(() => {
           startListening();
         }, 1000);
@@ -99,21 +81,43 @@ const VoiceInterview = () => {
     askNextQuestion();
   };
 
-  const askNextQuestion = () => {
-    const roleQuestions = questions[selectedRole as keyof typeof questions] || [];
-    if (questionCount < roleQuestions.length) {
-      const question = roleQuestions[questionCount];
-      setCurrentQuestion(question);
-      setTimeout(() => speakText(question), 500);
-    } else {
-      const endMessage = "Thank you for completing the interview practice. Great job!";
-      setCurrentQuestion(endMessage);
-      speakText(endMessage);
-      setTimeout(() => {
-        setIsInterviewStarted(false);
-        setCurrentQuestion("");
-        setQuestionCount(0);
-      }, 3000);
+  const askNextQuestion = async () => {
+    try {
+      const response = await fetch('/.netlify/functions/voice-interview', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          role: selectedRole,
+          questionNumber: questionCount
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        setCurrentQuestion(data.question);
+        setTimeout(() => speakText(data.question), 500);
+        
+        if (!data.hasMoreQuestions && data.question.includes("Thank you")) {
+          setTimeout(() => {
+            setIsInterviewStarted(false);
+            setCurrentQuestion("");
+            setQuestionCount(0);
+          }, 5000);
+        }
+      } else {
+        // Fallback question
+        const fallbackQuestion = "Can you tell me about a project you're particularly proud of?";
+        setCurrentQuestion(fallbackQuestion);
+        setTimeout(() => speakText(fallbackQuestion), 500);
+      }
+    } catch (error) {
+      console.error('Error fetching question:', error);
+      const fallbackQuestion = "What interests you most about this role?";
+      setCurrentQuestion(fallbackQuestion);
+      setTimeout(() => speakText(fallbackQuestion), 500);
     }
   };
 
@@ -132,7 +136,24 @@ const VoiceInterview = () => {
     }
   };
 
-  const handleAnswerReceived = (answer: string) => {
+  const handleAnswerReceived = async (answer: string) => {
+    try {
+      // Optional: Send answer for feedback
+      await fetch('/.netlify/functions/voice-interview', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          role: selectedRole,
+          questionNumber: questionCount,
+          userAnswer: answer
+        }),
+      });
+    } catch (error) {
+      console.error('Error submitting answer:', error);
+    }
+    
     setQuestionCount(prev => prev + 1);
     setTimeout(() => {
       askNextQuestion();
