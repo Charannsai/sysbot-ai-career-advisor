@@ -9,56 +9,194 @@ const handler: Handler = async (event) => {
   }
 
   try {
-    const { message, role, conversationHistory } = JSON.parse(event.body || '{}');
+    const { message, role, conversationHistory, isFirstMessage, resumeContent } = JSON.parse(event.body || '{}');
     
-    if (!message || !role) {
+    if (!role) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: 'Message and role are required' }),
+        body: JSON.stringify({ error: 'Role is required' }),
       };
     }
 
-    const roleContext = {
-      'software-engineer': 'You are conducting a technical interview for a Software Engineer position. Focus on programming skills, problem-solving, system design, and technical experience.',
-      'product-manager': 'You are conducting an interview for a Product Manager position. Focus on product strategy, user research, prioritization, stakeholder management, and analytics.',
-      'ux-designer': 'You are conducting an interview for a UX Designer position. Focus on design process, user research, prototyping, design systems, and user empathy.',
-      'data-scientist': 'You are conducting an interview for a Data Scientist position. Focus on statistical analysis, machine learning, data visualization, and business problem-solving.',
-      'marketing-manager': 'You are conducting an interview for a Marketing Manager position. Focus on campaign strategy, market research, brand management, and ROI measurement.',
-      'sales-representative': 'You are conducting an interview for a Sales Representative position. Focus on sales techniques, customer relationship management, negotiation, and target achievement.'
+    // Formal interview role definitions
+    const interviewerProfiles = {
+      'software-engineer': {
+        title: 'Senior Software Engineering Manager',
+        company: 'TechCorp',
+        greeting: 'Good morning/afternoon. I\'m Sarah Johnson, Senior Engineering Manager here at TechCorp. Thank you for taking the time to interview with us today for the Software Engineer position.',
+        focus: 'technical problem-solving, coding proficiency, system design, software development lifecycle, teamwork in technical environments',
+        interviewFlow: [
+          'Personal introduction and background',
+          'Technical experience and programming languages',
+          'Problem-solving and algorithmic thinking',
+          'System design and architecture',
+          'Code quality and best practices',
+          'Team collaboration and project experience',
+          'Career goals and company fit'
+        ]
+      },
+      'product-manager': {
+        title: 'Director of Product Management',
+        company: 'InnovateCorp',
+        greeting: 'Good morning/afternoon. I\'m Michael Chen, Director of Product Management at InnovateCorp. I\'m pleased to meet with you today regarding the Product Manager position.',
+        focus: 'product strategy, user research, stakeholder management, data-driven decision making, market analysis, roadmap planning',
+        interviewFlow: [
+          'Background and product management experience',
+          'Product strategy and vision',
+          'User research and customer insights',
+          'Stakeholder management and communication',
+          'Data analysis and metrics',
+          'Prioritization and roadmap planning',
+          'Leadership and team collaboration'
+        ]
+      },
+      'ux-designer': {
+        title: 'Head of User Experience Design',
+        company: 'DesignFirst Inc',
+        greeting: 'Good morning/afternoon. I\'m Emma Rodriguez, Head of UX Design at DesignFirst Inc. Thank you for your interest in the UX Designer position.',
+        focus: 'design thinking, user research, prototyping, design systems, accessibility, user empathy, design process',
+        interviewFlow: [
+          'Design background and philosophy',
+          'Design process and methodology',
+          'User research and testing experience',
+          'Portfolio discussion and case studies',
+          'Design systems and collaboration',
+          'Accessibility and inclusive design',
+          'Career aspirations in UX'
+        ]
+      },
+      'data-scientist': {
+        title: 'Principal Data Scientist',
+        company: 'DataTech Solutions',
+        greeting: 'Good morning/afternoon. I\'m Dr. James Wilson, Principal Data Scientist at DataTech Solutions. I\'m excited to discuss the Data Scientist opportunity with you today.',
+        focus: 'statistical analysis, machine learning, data modeling, business problem-solving, programming skills, research methodology',
+        interviewFlow: [
+          'Educational background and data science journey',
+          'Statistical analysis and methodology',
+          'Machine learning experience and applications',
+          'Programming and technical skills',
+          'Business problem-solving approach',
+          'Data visualization and communication',
+          'Research experience and continuous learning'
+        ]
+      },
+      'marketing-manager': {
+        title: 'VP of Marketing',
+        company: 'GrowthCorp',
+        greeting: 'Good morning/afternoon. I\'m Lisa Thompson, VP of Marketing at GrowthCorp. I\'m delighted to speak with you about the Marketing Manager position.',
+        focus: 'marketing strategy, campaign management, brand development, market research, digital marketing, ROI analysis',
+        interviewFlow: [
+          'Marketing background and experience',
+          'Campaign strategy and execution',
+          'Brand management and positioning',
+          'Market research and analysis',
+          'Digital marketing and channels',
+          'Performance measurement and ROI',
+          'Team leadership and collaboration'
+        ]
+      },
+      'sales-representative': {
+        title: 'Regional Sales Director',
+        company: 'SalesPro Inc',
+        greeting: 'Good morning/afternoon. I\'m Robert Davis, Regional Sales Director at SalesPro Inc. Thank you for your interest in the Sales Representative position.',
+        focus: 'sales methodology, relationship building, negotiation, pipeline management, target achievement, customer service',
+        interviewFlow: [
+          'Sales background and achievements',
+          'Sales process and methodology',
+          'Relationship building and networking',
+          'Negotiation and closing techniques',
+          'Pipeline management and forecasting',
+          'Customer service and retention',
+          'Goal setting and performance'
+        ]
+      }
     };
 
-    const context = roleContext[role as keyof typeof roleContext] || 'You are conducting a professional job interview.';
-    
-    let conversationContext = '';
-    if (conversationHistory && conversationHistory.length > 0) {
-      conversationContext = '\n\nPrevious conversation:\n' + 
-        conversationHistory.map((msg: any) => `${msg.type === 'user' ? 'Candidate' : 'Interviewer'}: ${msg.content}`).join('\n');
+    const interviewer = interviewerProfiles[role as keyof typeof interviewerProfiles] || {
+      title: 'Hiring Manager',
+      company: 'Professional Corp',
+      greeting: 'Good morning/afternoon. Thank you for your interest in this position.',
+      focus: 'professional experience and skills',
+      interviewFlow: ['Background', 'Experience', 'Skills', 'Goals']
+    };
+
+    // Handle first message (greeting)
+    if (isFirstMessage) {
+      const welcomeResponse = `${interviewer.greeting}\n\nTo conduct a thorough interview, I'd like to review your background first. Could you please share:\n\n1. Your resume or a summary of your experience\n2. Any portfolio links, project links, or relevant work samples\n3. Any other materials you'd like me to consider\n\nPlease paste your resume content and any links in your next message.`;
+      
+      return {
+        statusCode: 200,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type',
+        },
+        body: JSON.stringify({ response: welcomeResponse }),
+      };
     }
 
-    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=' + process.env.GEMINI_API_KEY, {
+    // Build conversation context
+    let conversationContext = '';
+    if (conversationHistory && conversationHistory.length > 0) {
+      conversationContext = conversationHistory.slice(-8).map((msg: any) => 
+        `${msg.type === 'user' ? 'Candidate' : 'Interviewer'}: ${msg.content}`
+      ).join('\n');
+    }
+
+    // Determine interview stage
+    const messageCount = conversationHistory ? conversationHistory.length : 0;
+    const currentStage = Math.min(Math.floor(messageCount / 2), interviewer.interviewFlow.length - 1);
+    const nextTopic = interviewer.interviewFlow[currentStage + 1] || 'wrap-up questions';
+
+    // Check if this is resume submission (second message)
+    const isResumeSubmission = messageCount === 1;
+    
+    let prompt = '';
+    
+    if (isResumeSubmission) {
+      prompt = `You are ${interviewer.title} at ${interviewer.company}. The candidate has just shared their resume/portfolio for the ${role.replace('-', ' ')} position.
+
+CANDIDATE'S RESUME/PORTFOLIO:
+"${message}"
+
+Your task:
+1. Acknowledge receipt of their materials professionally
+2. Based on their background, ask ONE specific question about their most relevant experience
+3. Focus on something specific from their resume that relates to ${interviewer.focus}
+4. Keep response under 80 words
+5. Be formal and professional
+
+Respond as the interviewer:`;
+    } else {
+      prompt = `You are ${interviewer.title} at ${interviewer.company}, interviewing for ${role.replace('-', ' ')}.
+
+CANDIDATE'S BACKGROUND (from earlier):
+${resumeContent || 'Not provided'}
+
+CONVERSATION:
+${conversationContext}
+
+CANDIDATE'S LATEST RESPONSE:
+"${message}"
+
+Based on their response and background:
+1. Acknowledge their answer briefly
+2. Ask ONE follow-up question that builds on what they said
+3. Reference their background when relevant
+4. Focus on: ${interviewer.focus}
+5. Keep under 80 words
+6. Stay formal and professional
+
+Respond as the interviewer:`;
+    }
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         contents: [{
-          parts: [{
-            text: `${context}
-
-${conversationContext}
-
-Candidate's latest response: "${message}"
-
-Please respond as the interviewer with a thoughtful follow-up question or feedback. Keep responses conversational, professional, and under 150 words. If this is early in the conversation, ask behavioral or experience-based questions. As the conversation progresses, you can ask more technical or role-specific questions.
-
-Your response should:
-1. Acknowledge their answer briefly if appropriate
-2. Ask a relevant follow-up question that builds on their response
-3. Keep the conversation flowing naturally
-4. Gradually increase question difficulty
-
-Response:`
-          }]
+          parts: [{ text: prompt }]
         }]
       })
     });
@@ -69,7 +207,10 @@ Response:`
       throw new Error(data.error?.message || 'Failed to generate interview response');
     }
 
-    const aiResponse = data.candidates[0].content.parts[0].text.trim();
+    let aiResponse = data.candidates[0].content.parts[0].text.trim();
+    aiResponse = aiResponse.replace(/^(Response:|Your response:|Interviewer:|As the interviewer:|As .*?:)\s*/i, '');
+    
+    console.log('Gemini API response:', aiResponse);
 
     return {
       statusCode: 200,
@@ -82,16 +223,10 @@ Response:`
   } catch (error) {
     console.error('Error:', error);
     
-    // Fallback responses based on role
-    const fallbackResponses = [
-      "That's an interesting perspective. Can you tell me about a specific challenge you faced in a previous project and how you overcame it?",
-      "Thank you for sharing that. What would you say is your greatest strength, and how would it benefit our team?",
-      "I appreciate your answer. Can you describe a time when you had to work with a difficult team member? How did you handle the situation?",
-      "Good insight. Where do you see yourself professionally in the next 5 years, and how does this role align with those goals?",
-      "That's helpful to know. Do you have any questions about the role, team, or company culture?"
-    ];
-    
-    const randomResponse = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
+    const isResumeSubmission = messageCount === 1;
+    const fallbackResponse = isResumeSubmission 
+      ? "Thank you for sharing your background. Based on your experience, could you tell me about a specific project or achievement you're most proud of?"
+      : "I appreciate your response. Could you provide more specific details about your experience with this?";
     
     return {
       statusCode: 200,
@@ -99,7 +234,7 @@ Response:`
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type',
       },
-      body: JSON.stringify({ response: randomResponse }),
+      body: JSON.stringify({ response: fallbackResponse }),
     };
   }
 };

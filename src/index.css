@@ -8,132 +8,85 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Professional Career Platform Colors */
-    --background: 210 20% 98%;
-    --foreground: 215 25% 15%;
+    /* Google AI Studio Light Theme */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 215 25% 15%;
+    --card-foreground: 0 0% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 15%;
+    --popover-foreground: 0 0% 15%;
 
-    /* Professional Blue Primary */
-    --primary: 210 95% 45%;
+    /* Google Blue */
+    --primary: 221 83% 53%;
     --primary-foreground: 0 0% 100%;
-    --primary-light: 210 85% 55%;
-    --primary-dark: 210 100% 35%;
 
-    /* Teal Secondary */
-    --secondary: 185 80% 50%;
-    --secondary-foreground: 0 0% 100%;
-    --secondary-light: 185 70% 60%;
+    /* Neutral Grays */
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 15%;
 
-    /* Subtle Gray Tones */
-    --muted: 210 15% 95%;
-    --muted-foreground: 215 15% 55%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
 
-    --accent: 185 50% 92%;
-    --accent-foreground: 185 80% 25%;
+    --accent: 0 0% 96%;
+    --accent-foreground: 0 0% 15%;
 
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 210 20% 88%;
-    --input: 210 20% 88%;
-    --ring: 210 95% 45%;
+    --border: 0 0% 90%;
+    --input: 0 0% 96%;
+    --ring: 221 83% 53%;
 
-    /* Success & Warning */
-    --success: 140 70% 45%;
-    --success-foreground: 0 0% 100%;
-    --warning: 45 95% 55%;
-    --warning-foreground: 45 95% 15%;
+    /* Accent Colors */
+    --blue-accent: 221 83% 53%;
+    --yellow-accent: 45 100% 85%;
+    --purple-accent: 270 50% 85%;
 
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(210, 95%, 45%) 0%, hsl(185, 80%, 50%) 100%);
-    --gradient-secondary: linear-gradient(135deg, hsl(185, 80%, 50%) 0%, hsl(210, 95%, 45%) 100%);
-    --gradient-subtle: linear-gradient(135deg, hsl(210, 20%, 98%) 0%, hsl(210, 15%, 95%) 100%);
+    --radius: 12px;
 
-    /* Shadows */
-    --shadow-card: 0 4px 20px -2px hsl(210 95% 45% / 0.1);
-    --shadow-feature: 0 8px 30px -4px hsl(210 95% 45% / 0.15);
-    --shadow-glow: 0 0 40px hsl(210 95% 45% / 0.3);
-
-    /* Animation */
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-
-    --radius: 0.75rem;
-
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Sidebar */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 0 0% 15%;
+    --sidebar-border: 0 0% 90%;
+    --sidebar-accent: 0 0% 96%;
   }
 
   .dark {
-    --background: 215 28% 8%;
-    --foreground: 210 15% 92%;
+    /* Google AI Studio Dark Theme */
+    --background: 0 0% 7%;
+    --foreground: 0 0% 95%;
 
-    --card: 215 25% 12%;
-    --card-foreground: 210 15% 92%;
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 95%;
 
-    --popover: 215 25% 12%;
-    --popover-foreground: 210 15% 92%;
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 95%;
 
-    --primary: 210 95% 55%;
-    --primary-foreground: 215 28% 8%;
-    --primary-light: 210 85% 65%;
-    --primary-dark: 210 100% 45%;
+    --primary: 221 83% 53%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 185 70% 45%;
-    --secondary-foreground: 215 28% 8%;
-    --secondary-light: 185 60% 55%;
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 95%;
 
-    --muted: 215 20% 15%;
-    --muted-foreground: 215 10% 60%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 65%;
 
-    --accent: 185 30% 20%;
-    --accent-foreground: 185 70% 70%;
+    --accent: 0 0% 15%;
+    --accent-foreground: 0 0% 95%;
 
-    --destructive: 0 75% 55%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 215 20% 18%;
-    --input: 215 20% 18%;
-    --ring: 210 95% 55%;
+    --border: 0 0% 20%;
+    --input: 0 0% 15%;
+    --ring: 221 83% 53%;
 
-    --success: 140 60% 50%;
-    --success-foreground: 0 0% 100%;
-    --warning: 45 85% 60%;
-    --warning-foreground: 45 85% 15%;
-
-    --gradient-primary: linear-gradient(135deg, hsl(210, 95%, 55%) 0%, hsl(185, 70%, 45%) 100%);
-    --gradient-secondary: linear-gradient(135deg, hsl(185, 70%, 45%) 0%, hsl(210, 95%, 55%) 100%);
-    --gradient-subtle: linear-gradient(135deg, hsl(215, 28%, 8%) 0%, hsl(215, 20%, 15%) 100%);
-
-    --shadow-card: 0 4px 20px -2px hsl(0 0% 0% / 0.3);
-    --shadow-feature: 0 8px 30px -4px hsl(0 0% 0% / 0.4);
-    --shadow-glow: 0 0 40px hsl(210 95% 55% / 0.4);
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 0 0% 7%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-border: 0 0% 20%;
+    --sidebar-accent: 0 0% 15%;
   }
 }
 
@@ -143,7 +96,9 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Google Sans', 'Inter', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
   }
   
   h1, h2, h3, h4, h5, h6 {
@@ -164,5 +119,61 @@ All colors MUST be HSL.
   
   p {
     @apply leading-relaxed;
+  }
+}
+
+/* Google AI Studio Utilities */
+@layer utilities {
+  .studio-card {
+    @apply bg-white border border-gray-200 rounded-2xl;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  }
+  
+  .dark .studio-card {
+    @apply bg-white/5 border-white/10;
+  }
+  
+  .studio-sidebar {
+    background-color: hsl(var(--sidebar-background));
+    border-right: 1px solid hsl(var(--sidebar-border));
+  }
+  
+  .studio-input {
+    @apply bg-white border-2 border-gray-300 rounded-xl px-4 py-3 text-base;
+    @apply focus:outline-none transition-all duration-200;
+  }
+  
+  .dark .studio-input {
+    @apply bg-white/5 border-white/10;
+    @apply focus:bg-white/10 focus:border-white/20;
+  }
+  
+  .studio-button {
+    @apply bg-gray-100 border border-gray-300 text-foreground rounded-xl px-6 py-2.5 text-sm font-semibold;
+    @apply hover:bg-gray-200 hover:border-gray-400 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .dark .studio-button {
+    @apply bg-white/5 border-white/10;
+    @apply hover:bg-white/10 hover:border-white/20;
+  }
+  
+  .studio-nav-item {
+    @apply flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium;
+    @apply hover:bg-gray-100 transition-colors duration-200;
+  }
+  
+  .dark .studio-nav-item:hover {
+    @apply bg-white/5;
+  }
+  
+  .studio-nav-active {
+    @apply bg-gray-100 border border-gray-200;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  
+  .dark .studio-nav-active {
+    @apply bg-white/5 border-white/10;
   }
 }

@@ -1,6 +1,4 @@
-import { Lightbulb, MessageCircle, Mic } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Home, Lightbulb, MessageCircle, Mic } from "lucide-react";
 
 interface NavigationProps {
   activeTab: string;
@@ -10,57 +8,47 @@ interface NavigationProps {
 const Navigation = ({ activeTab, onTabChange }: NavigationProps) => {
   const tabs = [
     {
+      id: 'about',
+      label: 'About',
+      icon: Home
+    },
+    {
       id: 'career',
-      label: 'Career Suggestions',
-      icon: Lightbulb,
-      description: 'Discover career paths based on your skills'
+      label: 'Career Discovery',
+      icon: Lightbulb
     },
     {
       id: 'chat',
       label: 'Chat Interview',
-      icon: MessageCircle,
-      description: 'Practice interviews via text conversation'
+      icon: MessageCircle
     },
     {
       id: 'voice',
       label: 'Voice Interview',
-      icon: Mic,
-      description: 'Voice-powered interview practice'
+      icon: Mic
     }
   ];
 
   return (
-    <Card className="p-2 shadow-card border-0 bg-gradient-subtle">
-      <div className="flex gap-2">
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          return (
-            <Button
-              key={tab.id}
-              variant={activeTab === tab.id ? "default" : "ghost"}
-              onClick={() => onTabChange(tab.id)}
-              className={`flex-1 h-auto p-4 flex flex-col gap-2 transition-all duration-300 ${
-                activeTab === tab.id 
-                  ? 'bg-gradient-primary text-white shadow-feature' 
-                  : 'hover:bg-accent hover:shadow-card'
-              }`}
-            >
-              <Icon className={`h-5 w-5 ${activeTab === tab.id ? 'text-white' : 'text-primary'}`} />
-              <div className="text-center">
-                <div className={`font-medium ${activeTab === tab.id ? 'text-white' : 'text-foreground'}`}>
-                  {tab.label}
-                </div>
-                <div className={`text-xs mt-1 ${
-                  activeTab === tab.id ? 'text-white/80' : 'text-muted-foreground'
-                }`}>
-                  {tab.description}
-                </div>
-              </div>
-            </Button>
-          );
-        })}
-      </div>
-    </Card>
+    <nav className="space-y-1">
+      {tabs.map((tab) => {
+        const Icon = tab.icon;
+        const isActive = activeTab === tab.id;
+        
+        return (
+          <button
+            key={tab.id}
+            onClick={() => onTabChange(tab.id)}
+            className={`studio-nav-item w-full ${
+              isActive ? 'studio-nav-active' : ''
+            }`}
+          >
+            <Icon className="h-5 w-5" />
+            <span>{tab.label}</span>
+          </button>
+        );
+      })}
+    </nav>
   );
 };
 

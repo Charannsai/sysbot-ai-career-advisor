@@ -5,6 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { MessageCircle, Send, Bot, User, Briefcase } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import Footer from "@/components/Footer";
+
+interface ChatInterviewProps {
+  onNavigate?: (tab: string) => void;
+}
 
 interface Message {
   id: string;
@@ -13,12 +18,15 @@ interface Message {
   timestamp: Date;
 }
 
-const ChatInterview = () => {
+const ChatInterview = ({ onNavigate }: ChatInterviewProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentMessage, setCurrentMessage] = useState("");
   const [selectedRole, setSelectedRole] = useState("");
   const [isInterviewStarted, setIsInterviewStarted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [resumeContent, setResumeContent] = useState("");
+  const [portfolioLinks, setPortfolioLinks] = useState("");
+  const [showResumeUpload, setShowResumeUpload] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -29,17 +37,94 @@ const ChatInterview = () => {
     scrollToBottom();
   }, [messages]);
 
-  const startInterview = () => {
-    if (!selectedRole) return;
+  const handleRoleSelect = (role: string) => {
+    setSelectedRole(role);
+    setShowResumeUpload(true);
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
     
-    setIsInterviewStarted(true);
-    const welcomeMessage: Message = {
-      id: Date.now().toString(),
-      type: 'ai',
-      content: `Hello! I'm your AI interviewer for the ${selectedRole} position. I'll ask you a series of questions to help you practice. Let's start with: Can you tell me about yourself and why you're interested in this role?`,
-      timestamp: new Date()
-    };
-    setMessages([welcomeMessage]);
+    setIsLoading(true);
+    
+    try {
+      if (file.type === 'application/pdf') {
+        const arrayBuffer = await file.arrayBuffer();
+        // PDF processing removed for now
+        setResumeContent('PDF uploaded. Please paste your resume content in the text area below.');
+        let text = '';
+        
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          text += textContent.items.map((item: any) => item.str).join(' ') + '\n';
+        }
+        
+        setResumeContent(text.trim());
+      } else {
+        const reader = new FileReader();
+        reader.onload = (e) => setResumeContent(e.target?.result as string);
+        reader.readAsText(file);
+      }
+    } catch (error) {
+      console.error('File error:', error);
+      setResumeContent('Error reading file. Please paste content manually.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const analyzeAndStartInterview = async () => {
+    if (!resumeContent.trim()) return;
+    
+    setIsLoading(true);
+    
+    try {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyDWDoUjJLDNP8IFEOo04StILrgb0gq61bg`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: `Extract the candidate's name from this resume and analyze suitability for ${selectedRole.replace('-', ' ')} role:\n\nRESUME:\n${resumeContent}\n\nLINKS:\n${portfolioLinks}\n\nFormat your response as:\nNAME: [extracted name or "there"]\n\nIf NOT suitable: "UNFIT: Hello [name], thank you for your interest in the ${selectedRole.replace('-', ' ')} position. After reviewing your background, [reason]. I recommend exploring roles that better match your current experience."\n\nIf suitable: "FIT: Hello [name], welcome! I'm excited to discuss the ${selectedRole.replace('-', ' ')} position with you. [First question about their specific experience]"`
+            }]
+          }]
+        })
+      });
+      
+      const data = await response.json();
+      const analysis = data.candidates[0].content.parts[0].text.trim();
+      
+      const message = analysis.includes('UNFIT:') 
+        ? analysis.split('UNFIT:')[1].trim()
+        : analysis.split('FIT:')[1].trim();
+      
+      const welcomeMessage: Message = {
+        id: Date.now().toString(),
+        type: 'ai',
+        content: message,
+        timestamp: new Date()
+      };
+      setMessages([welcomeMessage]);
+      
+      setIsInterviewStarted(true);
+      setShowResumeUpload(false);
+    } catch (error) {
+      const welcomeMessage: Message = {
+        id: Date.now().toString(),
+        type: 'ai',
+        content: `Hello! Welcome to the ${selectedRole.replace('-', ' ')} interview. Let's get started.`,
+        timestamp: new Date()
+      };
+      setMessages([welcomeMessage]);
+      setIsInterviewStarted(true);
+      setShowResumeUpload(false);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const sendMessage = async () => {
@@ -58,63 +143,51 @@ const ChatInterview = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/.netlify/functions/chat-interview', {
+      const conversationHistory = messages.slice(-4).map(m => `${m.type}: ${m.content}`).join('\n');
+      
+      const prompt = `You are a ${selectedRole.replace('-', ' ')} interviewer. \n\nCandidate's background: ${resumeContent.substring(0, 400)}\n\nConversation so far:\n${conversationHistory}\n\nCandidate just said: "${currentMessage}"\n\nRespond conversationally by:\n1. Acknowledging their answer ("That's interesting...", "Great point...")\n2. Then ask ONE follow-up question\n\nKeep response under 60 words and sound natural.`;
+      
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyDWDoUjJLDNP8IFEOo04StILrgb0gq61bg`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          message: currentMessage,
-          role: selectedRole,
-          conversationHistory: messages
-        }),
+          contents: [{ parts: [{ text: prompt }] }]
+        })
       });
       
       const data = await response.json();
       
-      if (response.ok) {
+      if (response.ok && data.candidates) {
+        const aiResponse = data.candidates[0].content.parts[0].text.trim();
         const aiMessage: Message = {
           id: (Date.now() + 1).toString(),
           type: 'ai',
-          content: data.response,
+          content: aiResponse,
           timestamp: new Date()
         };
         setMessages(prev => [...prev, aiMessage]);
       } else {
-        // Fallback to mock responses
-        const fallbackResponses = [
-          "That's a great answer! Can you describe a challenging project you've worked on and how you overcame obstacles?",
-          "Interesting perspective! Tell me about a time when you had to work with a difficult team member. How did you handle it?",
-          "Good insight! What are your greatest strengths and how would they benefit our team?",
-          "Thank you for sharing that. Where do you see yourself in 5 years, and how does this role align with your career goals?",
-          "Excellent response! Do you have any questions about the role or our company culture?"
-        ];
-        
-        const randomResponse = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
-        
-        const aiMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          type: 'ai',
-          content: randomResponse,
-          timestamp: new Date()
-        };
-        setMessages(prev => [...prev, aiMessage]);
+        throw new Error('API error');
       }
     } catch (error) {
-      console.error('Network Error:', error);
-      // Fallback to mock responses
-      const fallbackResponses = [
-        "That's interesting! Can you tell me more about your experience with similar challenges?",
-        "Good point. How do you typically approach problem-solving in your work?",
-        "Thank you for sharing. What motivates you most in your professional work?"
+      console.error('Interview Error:', error);
+      
+      const conversationalFallbacks = [
+        "That's really interesting! Can you tell me more about how you approached that challenge?",
+        "Great point! What was the most difficult part of that experience for you?",
+        "I see. How did that experience shape your approach to similar situations?",
+        "That sounds challenging. What would you do differently if you faced that situation again?",
+        "Excellent! Can you walk me through your thought process on that decision?"
       ];
       
-      const randomResponse = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
+      const fallbackResponse = conversationalFallbacks[messages.length % conversationalFallbacks.length];
       
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'ai',
-        content: randomResponse,
+        content: fallbackResponse,
         timestamp: new Date()
       };
       setMessages(prev => [...prev, aiMessage]);
@@ -131,54 +204,111 @@ const ChatInterview = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="text-center space-y-2">
-        <h2 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-          Chat Interview Practice
-        </h2>
-        <p className="text-muted-foreground text-lg">
-          Practice interviews through interactive chat conversations
-        </p>
+    <div className="max-w-4xl mx-auto space-y-12">
+      <div className="text-center space-y-6 pt-8">
+        <div className="space-y-4">
+          <h1 className="text-5xl font-bold text-foreground tracking-tight">
+            Master Your <span className="bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">Interview Skills</span>
+          </h1>
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+            Practice real interview scenarios with AI-powered conversations tailored to your role
+          </p>
+        </div>
       </div>
 
-      {!isInterviewStarted ? (
-        <Card className="shadow-card border-0">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Briefcase className="h-5 w-5 text-primary" />
-              Select Interview Role
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Select onValueChange={setSelectedRole}>
-              <SelectTrigger className="border-primary/20 focus:border-primary">
-                <SelectValue placeholder="Choose a role to practice for" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="software-engineer">Software Engineer</SelectItem>
-                <SelectItem value="product-manager">Product Manager</SelectItem>
-                <SelectItem value="ux-designer">UX Designer</SelectItem>
-                <SelectItem value="data-scientist">Data Scientist</SelectItem>
-                <SelectItem value="marketing-manager">Marketing Manager</SelectItem>
-                <SelectItem value="sales-representative">Sales Representative</SelectItem>
-              </SelectContent>
-            </Select>
+      {!isInterviewStarted && !showResumeUpload ? (
+        <div className="studio-card p-10">
+          <div className="text-center space-y-6">
+            <div className="space-y-2">
+              <h2 className="text-2xl font-semibold text-foreground">Choose Your Role</h2>
+              <p className="text-muted-foreground">Select the position you want to practice interviewing for</p>
+            </div>
             
-            <Button 
-              onClick={startInterview}
-              disabled={!selectedRole}
-              className="w-full bg-gradient-primary hover:opacity-90 text-white shadow-feature"
-            >
-              Start Interview Practice
-            </Button>
-          </CardContent>
-        </Card>
+            <div className="max-w-md mx-auto">
+              <Select onValueChange={handleRoleSelect}>
+                <SelectTrigger className="studio-input h-12 text-base">
+                  <SelectValue placeholder="Select interview role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="software-engineer">Software Engineer</SelectItem>
+                  <SelectItem value="product-manager">Product Manager</SelectItem>
+                  <SelectItem value="ux-designer">UX Designer</SelectItem>
+                  <SelectItem value="data-scientist">Data Scientist</SelectItem>
+                  <SelectItem value="marketing-manager">Marketing Manager</SelectItem>
+                  <SelectItem value="sales-representative">Sales Representative</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+      ) : showResumeUpload ? (
+        <div className="studio-card p-10 space-y-8">
+          <div className="text-center space-y-2">
+            <h2 className="text-2xl font-semibold text-foreground">Share Your Background</h2>
+            <p className="text-muted-foreground">Upload your resume or enter your information manually</p>
+          </div>
+          
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <label className="block text-sm font-semibold text-foreground">Resume File</label>
+              <input
+                type="file"
+                accept=".pdf,.txt,.doc,.docx"
+                onChange={handleFileUpload}
+                className="studio-input w-full"
+                disabled={isLoading}
+              />
+              {isLoading && <p className="text-sm text-blue-600">Processing file...</p>}
+            </div>
+            
+            <div className="space-y-3">
+              <label className="block text-sm font-semibold text-foreground">Portfolio/Project Links</label>
+              <textarea
+                placeholder="Share your portfolio, GitHub, LinkedIn, or project links..."
+                value={portfolioLinks}
+                onChange={(e) => setPortfolioLinks(e.target.value)}
+                className="studio-input min-h-[80px] resize-none"
+              />
+            </div>
+            
+            <div className="space-y-3">
+              <label className="block text-sm font-semibold text-foreground">Resume Content</label>
+              <textarea
+                placeholder="Paste your resume content here or upload a file above..."
+                value={resumeContent}
+                onChange={(e) => setResumeContent(e.target.value)}
+                className="studio-input min-h-[120px] resize-none"
+              />
+            </div>
+            
+            <div className="flex gap-4 pt-4">
+              <button 
+                onClick={() => setShowResumeUpload(false)}
+                className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+              >
+                Back
+              </button>
+              <button 
+                onClick={analyzeAndStartInterview}
+                disabled={!resumeContent.trim() || isLoading}
+                className="studio-button flex-1"
+              >
+                {isLoading ? 'Processing...' : 'Start Interview'}
+              </button>
+            </div>
+          </div>
+        </div>
       ) : (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <Badge className="bg-gradient-secondary text-white px-3 py-1">
-              Practicing: {selectedRole.replace('-', ' ').toUpperCase()}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge className="bg-gradient-secondary text-white px-3 py-1">
+                {selectedRole.replace('-', ' ').toUpperCase()} INTERVIEW
+              </Badge>
+              <Badge variant="outline" className="text-xs">
+                Stage {Math.floor(messages.length / 2) + 1}
+              </Badge>
+            </div>
             <Button 
               variant="outline" 
               onClick={() => {
@@ -186,13 +316,13 @@ const ChatInterview = () => {
                 setMessages([]);
                 setSelectedRole("");
               }}
-              className="border-primary/30 hover:border-primary"
+              className="border-border/50 hover:border-primary transition-colors"
             >
               End Interview
             </Button>
           </div>
 
-          <Card className="shadow-card border-0 h-[500px] flex flex-col">
+          <Card className="glass-card border-0 h-[500px] flex flex-col">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <MessageCircle className="h-5 w-5 text-secondary" />
@@ -253,13 +383,13 @@ const ChatInterview = () => {
                   value={currentMessage}
                   onChange={(e) => setCurrentMessage(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  className="flex-1 border-primary/20 focus:border-primary"
+                  className="flex-1 bg-background/50 border-border/50 focus:border-primary transition-colors"
                   disabled={isLoading}
                 />
                 <Button 
                   onClick={sendMessage}
                   disabled={!currentMessage.trim() || isLoading}
-                  className="bg-gradient-secondary hover:opacity-90 text-white"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground transition-colors"
                 >
                   <Send className="h-4 w-4" />
                 </Button>
@@ -268,6 +398,8 @@ const ChatInterview = () => {
           </Card>
         </div>
       )}
+      
+      <Footer onNavigate={onNavigate} />
     </div>
   );
 };

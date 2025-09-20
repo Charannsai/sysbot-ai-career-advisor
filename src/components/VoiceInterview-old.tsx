@@ -5,13 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Mic, MicOff, Volume2, VolumeX, Play, Square, Briefcase } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import Footer from "@/components/Footer";
 
-interface VoiceInterviewProps {
-  onNavigate?: (tab: string) => void;
-}
-
-const VoiceInterview = ({ onNavigate }: VoiceInterviewProps) => {
+const VoiceInterview = () => {
   const [selectedRole, setSelectedRole] = useState("");
   const [isInterviewStarted, setIsInterviewStarted] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -22,11 +17,10 @@ const VoiceInterview = ({ onNavigate }: VoiceInterviewProps) => {
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
   const [recognition, setRecognition] = useState<any>(null);
   const [resumeContent, setResumeContent] = useState("");
-  const [portfolioLinks, setPortfolioLinks] = useState("");
   const [showResumeInput, setShowResumeInput] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
+    // Initialize Speech Recognition
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
       const recognitionInstance = new SpeechRecognition();
@@ -42,42 +36,22 @@ const VoiceInterview = ({ onNavigate }: VoiceInterviewProps) => {
         handleAnswerReceived(transcript);
       };
 
-      recognitionInstance.onerror = () => setIsListening(false);
-      recognitionInstance.onend = () => setIsListening(false);
+      recognitionInstance.onerror = () => {
+        setIsListening(false);
+      };
+
+      recognitionInstance.onend = () => {
+        setIsListening(false);
+      };
 
       setRecognition(recognitionInstance);
     }
   }, []);
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    
-    setIsLoading(true);
-    
-    try {
-      if (file.type === 'application/pdf') {
-        const arrayBuffer = await file.arrayBuffer();
-        const pdf = await getDocument({ data: arrayBuffer }).promise;
-        let text = '';
-        
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const textContent = await page.getTextContent();
-          text += textContent.items.map((item: any) => item.str).join(' ') + '\n';
-        }
-        
-        setResumeContent(text.trim());
-      } else {
-        const reader = new FileReader();
-        reader.onload = (e) => setResumeContent(e.target?.result as string);
-        reader.readAsText(file);
-      }
-    } catch (error) {
-      setResumeContent('Error reading file. Please paste content manually.');
-    } finally {
-      setIsLoading(false);
-    }
+  const questions = {
+    "software-engineer": [],
+    "product-manager": [],
+    "ux-designer": []
   };
 
   const speakText = (text: string) => {
@@ -92,7 +66,9 @@ const VoiceInterview = ({ onNavigate }: VoiceInterviewProps) => {
     utterance.onend = () => {
       setIsSpeaking(false);
       if (isInterviewStarted && !currentQuestion.includes("Thank you for completing")) {
-        setTimeout(() => startListening(), 1000);
+        setTimeout(() => {
+          startListening();
+        }, 1000);
       }
     };
     
@@ -104,97 +80,51 @@ const VoiceInterview = ({ onNavigate }: VoiceInterviewProps) => {
     setShowResumeInput(true);
   };
   
-  const beginInterview = async () => {
-    if (!resumeContent.trim()) return;
-    
-    setIsLoading(true);
-    
-    try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyDWDoUjJLDNP8IFEOo04StILrgb0gq61bg`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: `Extract name and analyze resume for ${selectedRole.replace('-', ' ')} role:\n\nRESUME:\n${resumeContent}\n\nLINKS:\n${portfolioLinks}\n\nFormat response as:\nNAME: [name or "there"]\n\nIf NOT suitable: "UNFIT: Hello [name], after reviewing your background for the ${selectedRole.replace('-', ' ')} position, [reason]. I recommend exploring roles that better match your experience."\n\nIf suitable: "FIT: Hello [name], welcome to the ${selectedRole.replace('-', ' ')} interview! [First question about their experience]"`
-            }]
-          }]
-        })
-      });
-      
-      const data = await response.json();
-      const analysis = data.candidates[0].content.parts[0].text.trim();
-      
-      const message = analysis.includes('UNFIT:') 
-        ? analysis.split('UNFIT:')[1].trim()
-        : analysis.split('FIT:')[1].trim();
-      
-      setCurrentQuestion(message);
-      setIsInterviewStarted(true);
-      setShowResumeInput(false);
-      
-      setTimeout(() => speakText(message), 500);
-      
-    } catch (error) {
-      const fallbackMessage = `Hello! Welcome to the ${selectedRole.replace('-', ' ')} interview. Let's get started with your background.`;
-      setCurrentQuestion(fallbackMessage);
-      setIsInterviewStarted(true);
-      setShowResumeInput(false);
-      setTimeout(() => speakText(fallbackMessage), 500);
-    } finally {
-      setIsLoading(false);
-    }
+  const beginInterview = () => {
+    setIsInterviewStarted(true);
+    setShowResumeInput(false);
+    setQuestionCount(0);
+    askNextQuestion();
   };
 
-  const askNextQuestion = async (userAnswer?: string) => {
+  const askNextQuestion = async () => {
     try {
-      if (questionCount >= 5) {
-        const endMessage = "Thank you for completing the interview! You provided excellent insights. This concludes our session.";
-        setCurrentQuestion(endMessage);
-        setTimeout(() => speakText(endMessage), 500);
-        setTimeout(() => {
-          setIsInterviewStarted(false);
-          setCurrentQuestion("");
-          setQuestionCount(0);
-        }, 5000);
-        return;
-      }
-      
-      let prompt = '';
-      if (userAnswer) {
-        prompt = `You are a ${selectedRole.replace('-', ' ')} interviewer.\n\nCandidate's background: ${resumeContent.substring(0, 400)}\n\nThey just said: "${userAnswer}"\n\nRespond conversationally by acknowledging their answer and asking ONE follow-up question. Keep under 40 words for voice.`;
-      } else {
-        prompt = `Generate a ${selectedRole.replace('-', ' ')} interview question based on: ${resumeContent.substring(0, 400)}\n\nAsk about their specific experience. Keep under 30 words for voice.`;
-      }
-      
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyDWDoUjJLDNP8IFEOo04StILrgb0gq61bg`, {
+      const response = await fetch('/.netlify/functions/voice-interview', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }]
-        })
+          role: selectedRole,
+          questionNumber: questionCount,
+          resumeContent: resumeContent
+        }),
       });
       
       const data = await response.json();
-      const question = data.candidates[0].content.parts[0].text.trim();
       
-      setCurrentQuestion(question);
-      setTimeout(() => speakText(question), 500);
-      
+      if (response.ok) {
+        setCurrentQuestion(data.question);
+        setTimeout(() => speakText(data.question), 500);
+        
+        if (!data.hasMoreQuestions && data.question.includes("Thank you")) {
+          setTimeout(() => {
+            setIsInterviewStarted(false);
+            setCurrentQuestion("");
+            setQuestionCount(0);
+          }, 5000);
+        }
+      } else {
+        // Fallback question
+        const fallbackQuestion = "Can you tell me about a project you're particularly proud of?";
+        setCurrentQuestion(fallbackQuestion);
+        setTimeout(() => speakText(fallbackQuestion), 500);
+      }
     } catch (error) {
-      const fallbackQuestions = [
-        "Tell me about a project you're proud of.",
-        "What's your biggest professional achievement?",
-        "How do you handle challenging situations?",
-        "What motivates you in your work?"
-      ];
-      const fallback = fallbackQuestions[questionCount % fallbackQuestions.length];
-      setCurrentQuestion(fallback);
-      setTimeout(() => speakText(fallback), 500);
+      console.error('Error fetching question:', error);
+      const fallbackQuestion = "What interests you most about this role?";
+      setCurrentQuestion(fallbackQuestion);
+      setTimeout(() => speakText(fallbackQuestion), 500);
     }
   };
 
@@ -214,8 +144,27 @@ const VoiceInterview = ({ onNavigate }: VoiceInterviewProps) => {
   };
 
   const handleAnswerReceived = async (answer: string) => {
+    try {
+      // Optional: Send answer for feedback
+      await fetch('/.netlify/functions/voice-interview', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          role: selectedRole,
+          questionNumber: questionCount,
+          userAnswer: answer
+        }),
+      });
+    } catch (error) {
+      console.error('Error submitting answer:', error);
+    }
+    
     setQuestionCount(prev => prev + 1);
-    setTimeout(() => askNextQuestion(answer), 1500);
+    setTimeout(() => {
+      askNextQuestion();
+    }, 2000);
   };
 
   const endInterview = () => {
@@ -225,10 +174,10 @@ const VoiceInterview = ({ onNavigate }: VoiceInterviewProps) => {
     setCurrentQuestion("");
     setQuestionCount(0);
     setTranscript("");
-    setResumeContent("");
-    setPortfolioLinks("");
     speechSynthesis.cancel();
-    if (recognition) recognition.stop();
+    if (recognition) {
+      recognition.stop();
+    }
   };
 
   const toggleAudio = () => {
@@ -242,16 +191,14 @@ const VoiceInterview = ({ onNavigate }: VoiceInterviewProps) => {
   const isWebSpeechSupported = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-12">
-      <div className="text-center space-y-6 pt-8">
-        <div className="space-y-4">
-          <h1 className="text-5xl font-bold text-foreground tracking-tight">
-            Practice with <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Voice AI</span>
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            Experience realistic voice-based interviews with AI that listens and responds naturally
-          </p>
-        </div>
+    <div className="space-y-6">
+      <div className="text-center space-y-2">
+        <h2 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+          Voice Interview Assistant
+        </h2>
+        <p className="text-muted-foreground text-lg">
+          Practice interviews with AI-powered voice conversations
+        </p>
       </div>
 
       {!isWebSpeechSupported && (
@@ -263,18 +210,19 @@ const VoiceInterview = ({ onNavigate }: VoiceInterviewProps) => {
       )}
 
       {!isInterviewStarted && !showResumeInput ? (
-        <div className="studio-card p-10 space-y-8">
-          <div className="text-center space-y-2">
-            <h2 className="text-2xl font-semibold text-foreground">Setup Voice Interview</h2>
-            <p className="text-muted-foreground">Configure your voice interview preferences</p>
-          </div>
-          
-          <div className="space-y-6">
-            <div className="space-y-3">
-              <label className="block text-sm font-semibold text-foreground">Interview Role</label>
+        <Card className="shadow-card border-0">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Briefcase className="h-5 w-5 text-primary" />
+              Voice Interview Setup
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Select Interview Role</label>
               <Select onValueChange={setSelectedRole}>
-                <SelectTrigger className="studio-input h-12 text-base">
-                  <SelectValue placeholder="Choose your target role" />
+                <SelectTrigger className="border-primary/20 focus:border-primary">
+                  <SelectValue placeholder="Choose a role to practice for" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="software-engineer">Software Engineer</SelectItem>
@@ -287,71 +235,48 @@ const VoiceInterview = ({ onNavigate }: VoiceInterviewProps) => {
               </Select>
             </div>
 
-            <div className="flex items-center justify-between p-6 bg-gray-50 rounded-xl border border-gray-200">
-              <div className="space-y-1">
-                <h4 className="font-semibold text-foreground">Audio Output</h4>
-                <p className="text-sm text-muted-foreground">AI will speak questions aloud</p>
+            <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+              <div>
+                <h4 className="font-medium">Audio Output</h4>
+                <p className="text-sm text-muted-foreground">AI questions will be spoken aloud</p>
               </div>
-              <button
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={toggleAudio}
-                className="p-3 rounded-lg border border-gray-300 hover:bg-white transition-colors"
+                className="border-primary/30"
               >
-                {isAudioEnabled ? <Volume2 className="h-5 w-5 text-green-600" /> : <VolumeX className="h-5 w-5 text-gray-400" />}
-              </button>
+                {isAudioEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+              </Button>
             </div>
             
-            <div className="pt-4">
-              <button 
-                onClick={startInterview}
-                disabled={!selectedRole || !isWebSpeechSupported}
-                className="studio-button w-full py-4 text-base"
-              >
-                Continue to Resume Upload
-              </button>
-            </div>
-          </div>
-        </div>
+            <Button 
+              onClick={startInterview}
+              disabled={!selectedRole || !isWebSpeechSupported}
+              className="w-full bg-gradient-primary hover:opacity-90 text-white shadow-feature"
+            >
+              Continue to Resume Upload
+            </Button>
+          </CardContent>
+        </Card>
       ) : showResumeInput ? (
-        <Card className="glass-card border-0">
+        <Card className="shadow-card border-0">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Briefcase className="h-5 w-5 text-primary" />
-              Upload Resume & Portfolio
+              Share Your Background
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Resume File</label>
-              <input
-                type="file"
-                accept=".pdf,.txt,.doc,.docx"
-                onChange={handleFileUpload}
-                className="w-full p-2 border border-border/50 rounded-md bg-background/50"
-                disabled={isLoading}
-              />
-              {isLoading && <p className="text-xs text-muted-foreground">Processing file...</p>}
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Portfolio/Project Links</label>
-              <textarea
-                placeholder="Paste your portfolio, GitHub, LinkedIn, or project links here..."
-                value={portfolioLinks}
-                onChange={(e) => setPortfolioLinks(e.target.value)}
-                className="w-full min-h-[80px] p-3 border border-border/50 rounded-md resize-none bg-background/50"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Resume Content</label>
-              <textarea
-                placeholder="Upload a file above or paste your resume content here..."
-                value={resumeContent}
-                onChange={(e) => setResumeContent(e.target.value)}
-                className="w-full min-h-[120px] p-3 border border-border/50 rounded-md resize-none bg-background/50"
-              />
-            </div>
-            
+            <p className="text-muted-foreground">
+              Please share your resume content, portfolio links, or any relevant information for the {selectedRole.replace('-', ' ')} interview:
+            </p>
+            <textarea
+              placeholder="Paste your resume content, portfolio links, project links, or any relevant information here..."
+              value={resumeContent}
+              onChange={(e) => setResumeContent(e.target.value)}
+              className="w-full min-h-[200px] p-3 border border-primary/20 rounded-md focus:border-primary resize-none"
+            />
             <div className="flex gap-2">
               <Button 
                 onClick={() => setShowResumeInput(false)}
@@ -362,10 +287,10 @@ const VoiceInterview = ({ onNavigate }: VoiceInterviewProps) => {
               </Button>
               <Button 
                 onClick={beginInterview}
-                disabled={!resumeContent.trim() || isLoading}
-                className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground transition-colors"
+                disabled={!resumeContent.trim()}
+                className="flex-1 bg-gradient-primary hover:opacity-90 text-white"
               >
-                {isLoading ? 'Processing...' : 'Analyze & Start'}
+                Start Voice Interview
               </Button>
             </div>
           </CardContent>
@@ -396,7 +321,7 @@ const VoiceInterview = ({ onNavigate }: VoiceInterviewProps) => {
             </div>
           </div>
 
-          <Card className="glass-card border-0">
+          <Card className="shadow-card border-0">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
                 {isSpeaking ? (
@@ -484,8 +409,6 @@ const VoiceInterview = ({ onNavigate }: VoiceInterviewProps) => {
           </Card>
         </div>
       )}
-      
-      <Footer onNavigate={onNavigate} />
     </div>
   );
 };
