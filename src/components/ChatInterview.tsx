@@ -81,26 +81,22 @@ const ChatInterview = ({ onNavigate }: ChatInterviewProps) => {
     setIsLoading(true);
     
     try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyDWDoUjJLDNP8IFEOo04StILrgb0gq61bg`, {
+      const response = await fetch('/api/chat-interview', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: `Extract the candidate's name from this resume and analyze suitability for ${selectedRole.replace('-', ' ')} role:\n\nRESUME:\n${resumeContent}\n\nLINKS:\n${portfolioLinks}\n\nFormat your response as:\nNAME: [extracted name or "there"]\n\nIf NOT suitable: "UNFIT: Hello [name], thank you for your interest in the ${selectedRole.replace('-', ' ')} position. After reviewing your background, [reason]. I recommend exploring roles that better match your current experience."\n\nIf suitable: "FIT: Hello [name], welcome! I'm excited to discuss the ${selectedRole.replace('-', ' ')} position with you. [First question about their specific experience]"`
-            }]
-          }]
+          message: resumeContent + '\n\nLinks: ' + portfolioLinks,
+          role: selectedRole,
+          conversationHistory: [],
+          isFirstMessage: false,
+          resumeContent: resumeContent
         })
       });
       
       const data = await response.json();
-      const analysis = data.candidates[0].content.parts[0].text.trim();
-      
-      const message = analysis.includes('UNFIT:') 
-        ? analysis.split('UNFIT:')[1].trim()
-        : analysis.split('FIT:')[1].trim();
+      const message = data.response;
       
       const welcomeMessage: Message = {
         id: Date.now().toString(),
@@ -147,24 +143,27 @@ const ChatInterview = ({ onNavigate }: ChatInterviewProps) => {
       
       const prompt = `You are a ${selectedRole.replace('-', ' ')} interviewer. \n\nCandidate's background: ${resumeContent.substring(0, 400)}\n\nConversation so far:\n${conversationHistory}\n\nCandidate just said: "${currentMessage}"\n\nRespond conversationally by:\n1. Acknowledging their answer ("That's interesting...", "Great point...")\n2. Then ask ONE follow-up question\n\nKeep response under 60 words and sound natural.`;
       
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyDWDoUjJLDNP8IFEOo04StILrgb0gq61bg`, {
+      const response = await fetch('/api/chat-interview', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }]
+          message: currentMessage,
+          role: selectedRole,
+          conversationHistory: messages,
+          isFirstMessage: false,
+          resumeContent: resumeContent
         })
       });
       
       const data = await response.json();
       
-      if (response.ok && data.candidates) {
-        const aiResponse = data.candidates[0].content.parts[0].text.trim();
+      if (response.ok && data.response) {
         const aiMessage: Message = {
           id: (Date.now() + 1).toString(),
           type: 'ai',
-          content: aiResponse,
+          content: data.response,
           timestamp: new Date()
         };
         setMessages(prev => [...prev, aiMessage]);

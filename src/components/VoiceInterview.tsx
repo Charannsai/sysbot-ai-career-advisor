@@ -110,26 +110,20 @@ const VoiceInterview = ({ onNavigate }: VoiceInterviewProps) => {
     setIsLoading(true);
     
     try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyDWDoUjJLDNP8IFEOo04StILrgb0gq61bg`, {
+      const response = await fetch('/api/voice-interview', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: `Extract name and analyze resume for ${selectedRole.replace('-', ' ')} role:\n\nRESUME:\n${resumeContent}\n\nLINKS:\n${portfolioLinks}\n\nFormat response as:\nNAME: [name or "there"]\n\nIf NOT suitable: "UNFIT: Hello [name], after reviewing your background for the ${selectedRole.replace('-', ' ')} position, [reason]. I recommend exploring roles that better match your experience."\n\nIf suitable: "FIT: Hello [name], welcome to the ${selectedRole.replace('-', ' ')} interview! [First question about their experience]"`
-            }]
-          }]
+          role: selectedRole,
+          questionNumber: 0,
+          resumeContent: resumeContent
         })
       });
       
       const data = await response.json();
-      const analysis = data.candidates[0].content.parts[0].text.trim();
-      
-      const message = analysis.includes('UNFIT:') 
-        ? analysis.split('UNFIT:')[1].trim()
-        : analysis.split('FIT:')[1].trim();
+      const message = data.question;
       
       setCurrentQuestion(message);
       setIsInterviewStarted(true);
@@ -169,18 +163,21 @@ const VoiceInterview = ({ onNavigate }: VoiceInterviewProps) => {
         prompt = `Generate a ${selectedRole.replace('-', ' ')} interview question based on: ${resumeContent.substring(0, 400)}\n\nAsk about their specific experience. Keep under 30 words for voice.`;
       }
       
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyDWDoUjJLDNP8IFEOo04StILrgb0gq61bg`, {
+      const response = await fetch('/api/voice-interview', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }]
+          role: selectedRole,
+          questionNumber: questionCount,
+          userAnswer: userAnswer,
+          resumeContent: resumeContent
         })
       });
       
       const data = await response.json();
-      const question = data.candidates[0].content.parts[0].text.trim();
+      const question = data.question || data.feedback;
       
       setCurrentQuestion(question);
       setTimeout(() => speakText(question), 500);

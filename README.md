@@ -14,9 +14,19 @@ SysBot AI Career Advisor is an intelligent chatbot system designed to assist use
 
 ## Usage
 
-- Access the chatbot via the [web interface](https://sysbot.netlify.app).
+- Access the chatbot via the web interface.
 - Interact with SysBot to receive career advice, resume reviews, and job recommendations.
 - Update your profile and preferences for more tailored advice.
+
+## Deployment
+
+This project is configured for deployment on Vercel:
+
+1. Connect your GitHub repository to Vercel
+2. Set the `GEMINI_API_KEY` environment variable in your Vercel project settings
+3. Deploy automatically on push to main branch
+
+The API functions are located in the `/api` directory and use Vercel's serverless functions.
 
 ## Contributing
 

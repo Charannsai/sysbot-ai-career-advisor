@@ -1,21 +1,15 @@
-import { Handler } from '@netlify/functions';
+import { VercelRequest, VercelResponse } from '@vercel/node';
 
-const handler: Handler = async (event) => {
-  if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      body: JSON.stringify({ error: 'Method Not Allowed' }),
-    };
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
   try {
-    const { skills } = JSON.parse(event.body || '{}');
+    const { skills } = req.body;
     
     if (!skills) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: 'Skills are required' }),
-      };
+      return res.status(400).json({ error: 'Skills are required' });
     }
 
     const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=' + process.env.GEMINI_API_KEY, {
@@ -388,21 +382,11 @@ Requirements:
     
     console.log('Final suggestions:', JSON.stringify(suggestions, null, 2));
 
-    return {
-      statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      },
-      body: JSON.stringify({ suggestions }),
-    };
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    return res.status(200).json({ suggestions });
   } catch (error) {
     console.error('Error:', error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: 'Internal server error' }),
-    };
+    return res.status(500).json({ error: 'Internal server error' });
   }
-};
-
-export { handler };
+}

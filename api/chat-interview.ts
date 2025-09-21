@@ -1,21 +1,15 @@
-import { Handler } from '@netlify/functions';
+import { VercelRequest, VercelResponse } from '@vercel/node';
 
-const handler: Handler = async (event) => {
-  if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      body: JSON.stringify({ error: 'Method Not Allowed' }),
-    };
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
   try {
-    const { message, role, conversationHistory, isFirstMessage, resumeContent } = JSON.parse(event.body || '{}');
+    const { message, role, conversationHistory, isFirstMessage, resumeContent } = req.body;
     
     if (!role) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: 'Role is required' }),
-      };
+      return res.status(400).json({ error: 'Role is required' });
     }
 
     // Formal interview role definitions
@@ -124,14 +118,9 @@ const handler: Handler = async (event) => {
     if (isFirstMessage) {
       const welcomeResponse = `${interviewer.greeting}\n\nTo conduct a thorough interview, I'd like to review your background first. Could you please share:\n\n1. Your resume or a summary of your experience\n2. Any portfolio links, project links, or relevant work samples\n3. Any other materials you'd like me to consider\n\nPlease paste your resume content and any links in your next message.`;
       
-      return {
-        statusCode: 200,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Headers': 'Content-Type',
-        },
-        body: JSON.stringify({ response: welcomeResponse }),
-      };
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+      return res.status(200).json({ response: welcomeResponse });
     }
 
     // Build conversation context
@@ -212,31 +201,20 @@ Respond as the interviewer:`;
     
     console.log('Gemini API response:', aiResponse);
 
-    return {
-      statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      },
-      body: JSON.stringify({ response: aiResponse }),
-    };
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    return res.status(200).json({ response: aiResponse });
   } catch (error) {
     console.error('Error:', error);
     
+    const messageCount = req.body.conversationHistory ? req.body.conversationHistory.length : 0;
     const isResumeSubmission = messageCount === 1;
     const fallbackResponse = isResumeSubmission 
       ? "Thank you for sharing your background. Based on your experience, could you tell me about a specific project or achievement you're most proud of?"
       : "I appreciate your response. Could you provide more specific details about your experience with this?";
     
-    return {
-      statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      },
-      body: JSON.stringify({ response: fallbackResponse }),
-    };
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    return res.status(200).json({ response: fallbackResponse });
   }
-};
-
-export { handler };
+}

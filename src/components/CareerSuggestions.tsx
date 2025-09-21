@@ -48,68 +48,20 @@ const CareerSuggestions = ({ onNavigate }: CareerSuggestionsProps) => {
     setIsLoading(true);
     
     try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyDWDoUjJLDNP8IFEOo04StILrgb0gq61bg`, {
+      const response = await fetch('/api/career-suggestions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: resumeContent ? 
-                `Analyze this resume and provide exactly 3 career recommendations with resources in JSON format:
-
-Resume Content: "${resumeContent}"
-
-Extract skills from experience, education, and projects. If no clear skills found, suggest careers based on education/experience.
-
-Respond with ONLY valid JSON array:
-[
-  {
-    "title": "Career Title",
-    "match": "XX%",
-    "description": "Brief description",
-    "skillsUsed": ["skill1", "skill2", "skill3"],
-    "roadmap": ["Step 1 (timeframe)", "Step 2 (timeframe)", "Step 3 (timeframe)"],
-    "resources": [
-      {"name": "Resource Name", "url": "https://example.com", "type": "course", "description": "Description"}
-    ]
-  }
-]` :
-                `Analyze these skills and provide exactly 3 career recommendations with resources in JSON format:
-
-Skills: "${skills}"
-
-Respond with ONLY valid JSON array:
-[
-  {
-    "title": "Career Title",
-    "match": "XX%",
-    "description": "Brief description",
-    "skillsUsed": ["skill1", "skill2", "skill3"],
-    "roadmap": ["Step 1 (timeframe)", "Step 2 (timeframe)", "Step 3 (timeframe)"],
-    "resources": [
-      {"name": "Resource Name", "url": "https://example.com", "type": "course", "description": "Description"}
-    ]
-  }
-]`
-            }]
-          }]
+          skills: resumeContent || skills
         })
       });
       
       const data = await response.json();
       
-      if (response.ok && data.candidates) {
-        let suggestions;
-        try {
-          const text = data.candidates[0].content.parts[0].text.trim();
-          const jsonMatch = text.match(/\[[\s\S]*\]/);
-          suggestions = JSON.parse(jsonMatch ? jsonMatch[0] : text);
-        } catch {
-          throw new Error('Parse error');
-        }
-        setSuggestions(suggestions);
+      if (response.ok && data.suggestions) {
+        setSuggestions(data.suggestions);
       } else {
         throw new Error('API error');
       }

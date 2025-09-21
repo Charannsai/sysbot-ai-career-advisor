@@ -1,21 +1,15 @@
-import { Handler } from '@netlify/functions';
+import { VercelRequest, VercelResponse } from '@vercel/node';
 
-const handler: Handler = async (event) => {
-  if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      body: JSON.stringify({ error: 'Method Not Allowed' }),
-    };
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
   try {
-    const { role, questionNumber, userAnswer, resumeContent } = JSON.parse(event.body || '{}');
+    const { role, questionNumber, userAnswer, resumeContent } = req.body;
     
     if (!role) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: 'Role is required' }),
-      };
+      return res.status(400).json({ error: 'Role is required' });
     }
 
     // Generate dynamic questions based on resume content using Gemini
@@ -75,29 +69,19 @@ Question:`
       
       if (questionIndex < 5) { // Limit to 5 questions
         const question = await generateQuestion(questionIndex);
-        return {
-          statusCode: 200,
-          headers: {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Headers': 'Content-Type',
-          },
-          body: JSON.stringify({ 
-            question,
-            hasMoreQuestions: questionIndex < 4
-          }),
-        };
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+        return res.status(200).json({ 
+          question,
+          hasMoreQuestions: questionIndex < 4
+        });
       } else {
-        return {
-          statusCode: 200,
-          headers: {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Headers': 'Content-Type',
-          },
-          body: JSON.stringify({ 
-            question: "Thank you for completing the interview practice. You provided excellent insights! This concludes our session.",
-            hasMoreQuestions: false
-          }),
-        };
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+        return res.status(200).json({ 
+          question: "Thank you for completing the interview practice. You provided excellent insights! This concludes our session.",
+          hasMoreQuestions: false
+        });
       }
     }
 
@@ -129,21 +113,11 @@ Feedback (1-2 sentences, encouraging):`
       feedback = "Thank you for your thoughtful answer. Let's continue.";
     }
 
-    return {
-      statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      },
-      body: JSON.stringify({ feedback }),
-    };
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    return res.status(200).json({ feedback });
   } catch (error) {
     console.error('Error:', error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: 'Internal server error' }),
-    };
+    return res.status(500).json({ error: 'Internal server error' });
   }
-};
-
-export { handler };
+}
