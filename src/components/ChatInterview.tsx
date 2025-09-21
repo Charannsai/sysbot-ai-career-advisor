@@ -204,17 +204,18 @@ const ChatInterview = ({ onNavigate }: ChatInterviewProps) => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-12">
-      <div className="text-center space-y-6 pt-8">
-        <div className="space-y-4">
-          <h1 className="text-5xl font-bold text-foreground tracking-tight">
-            Master Your <span className="bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">Interview Skills</span>
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            Practice real interview scenarios with AI-powered conversations tailored to your role
-          </p>
+    <div className="min-h-screen flex flex-col">
+      <div className="flex-1 max-w-4xl mx-auto w-full px-4 py-8">
+        <div className="text-center space-y-6 mb-12">
+          <div className="space-y-4">
+            <h1 className="text-5xl font-bold text-foreground tracking-tight">
+              Master Your <span className="bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">Interview Skills</span>
+            </h1>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+              Practice real interview scenarios with AI-powered conversations tailored to your role
+            </p>
+          </div>
         </div>
-      </div>
 
       {!isInterviewStarted && !showResumeUpload ? (
         <div className="studio-card p-10">
@@ -284,7 +285,7 @@ const ChatInterview = ({ onNavigate }: ChatInterviewProps) => {
             <div className="flex gap-4 pt-4">
               <button 
                 onClick={() => setShowResumeUpload(false)}
-                className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+                className="flex-1 px-6 py-3 border border-border/50 text-muted-foreground rounded-xl font-medium hover:bg-muted/50 transition-colors"
               >
                 Back
               </button>
@@ -322,7 +323,7 @@ const ChatInterview = ({ onNavigate }: ChatInterviewProps) => {
             </Button>
           </div>
 
-          <Card className="glass-card border-0 h-[500px] flex flex-col">
+          <Card className="glass-card border-0 h-[60vh] min-h-[400px] flex flex-col">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <MessageCircle className="h-5 w-5 text-secondary" />
@@ -330,8 +331,8 @@ const ChatInterview = ({ onNavigate }: ChatInterviewProps) => {
               </CardTitle>
             </CardHeader>
             
-            <CardContent className="flex-1 flex flex-col space-y-4">
-              <div className="flex-1 overflow-y-auto space-y-3 pr-2">
+            <CardContent className="flex-1 flex flex-col space-y-4 overflow-hidden">
+              <div className="flex-1 overflow-y-auto space-y-3 pr-1 max-h-full [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-border/40 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-border/60">
                 {messages.map((message) => (
                   <div
                     key={message.id}
@@ -347,7 +348,7 @@ const ChatInterview = ({ onNavigate }: ChatInterviewProps) => {
                       <div className={`p-3 rounded-lg ${
                         message.type === 'ai' 
                           ? 'bg-muted text-foreground' 
-                          : 'bg-gradient-primary text-white'
+                          : 'bg-primary text-primary-foreground'
                       }`}>
                         <p className="text-sm leading-relaxed">{message.content}</p>
                         <span className={`text-xs mt-2 block ${
@@ -399,6 +400,7 @@ const ChatInterview = ({ onNavigate }: ChatInterviewProps) => {
         </div>
       )}
       
+      </div>
       <Footer onNavigate={onNavigate} />
     </div>
   );

@@ -18,8 +18,8 @@ const Footer = ({ currentPage, onNavigate }: FooterProps) => {
     : links;
 
   return (
-    <footer className="mt-16 pt-8 border-t border-gray-200">
-      <div className="flex justify-center gap-8">
+    <footer className="mt-16">
+      <div className="flex justify-center gap-8 border-t border-border/30 pt-8">
         {filteredLinks.map((link) => (
           <a
             key={link.id}

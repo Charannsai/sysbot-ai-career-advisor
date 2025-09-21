@@ -139,20 +139,21 @@ Respond with ONLY valid JSON array:
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-16">
-      {/* Hero Section */}
-      <div className="text-center space-y-6 pt-8">
-        <div className="space-y-4">
-          <h1 className="text-5xl font-bold text-foreground tracking-tight">
-            Discover Your <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Perfect Career</span>
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            Upload your resume or share your skills to get personalized career recommendations powered by AI
-          </p>
+    <div className="min-h-screen flex flex-col">
+      <div className="flex-1 max-w-4xl mx-auto w-full px-4 py-8">
+        {/* Hero Section */}
+        <div className="text-center space-y-6 mb-12">
+          <div className="space-y-4">
+            <h1 className="text-5xl font-bold text-foreground tracking-tight">
+              Discover Your <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Perfect Career</span>
+            </h1>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+              Upload your resume or share your skills to get personalized career recommendations powered by AI
+            </p>
+          </div>
         </div>
-      </div>
 
-      {/* Input Section */}
+        {/* Input Section */}
       <div className="studio-card p-10 space-y-8">
         {/* Upload Section */}
         <div className="text-center space-y-6">
@@ -343,7 +344,7 @@ Respond with ONLY valid JSON array:
           </div>
         </div>
       )}
-      
+      </div>
       <Footer onNavigate={onNavigate} />
     </div>
   );

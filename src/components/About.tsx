@@ -31,8 +31,9 @@ const About = ({ onNavigate }: AboutProps) => {
   ];
 
   return (
-    <div className="max-w-4xl mx-auto space-y-16">
-      {/* Hero Section */}
+    <div className="min-h-screen flex flex-col">
+      <div className="flex-1 max-w-4xl mx-auto w-full px-4 py-8">
+        {/* Hero Section */
       <div className="text-center space-y-6 pt-8">
         <div className="space-y-4">
           <h1 className="text-5xl font-bold text-foreground tracking-tight">
@@ -141,7 +142,7 @@ const About = ({ onNavigate }: AboutProps) => {
           Discover My Career Path
         </button>
       </div>
-      
+      </div>
       <Footer currentPage="about" />
     </div>
   );

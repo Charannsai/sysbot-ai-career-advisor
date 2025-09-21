@@ -242,17 +242,18 @@ const VoiceInterview = ({ onNavigate }: VoiceInterviewProps) => {
   const isWebSpeechSupported = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-12">
-      <div className="text-center space-y-6 pt-8">
-        <div className="space-y-4">
-          <h1 className="text-5xl font-bold text-foreground tracking-tight">
-            Practice with <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Voice AI</span>
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            Experience realistic voice-based interviews with AI that listens and responds naturally
-          </p>
+    <div className="min-h-screen flex flex-col">
+      <div className="flex-1 max-w-4xl mx-auto w-full px-4 py-8">
+        <div className="text-center space-y-6 mb-12">
+          <div className="space-y-4">
+            <h1 className="text-5xl font-bold text-foreground tracking-tight">
+              Practice with <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Voice AI</span>
+            </h1>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+              Experience realistic voice-based interviews with AI that listens and responds naturally
+            </p>
+          </div>
         </div>
-      </div>
 
       {!isWebSpeechSupported && (
         <Alert>
@@ -287,16 +288,16 @@ const VoiceInterview = ({ onNavigate }: VoiceInterviewProps) => {
               </Select>
             </div>
 
-            <div className="flex items-center justify-between p-6 bg-gray-50 rounded-xl border border-gray-200">
+            <div className="flex items-center justify-between p-6 bg-muted/50 rounded-xl border border-border/50">
               <div className="space-y-1">
                 <h4 className="font-semibold text-foreground">Audio Output</h4>
                 <p className="text-sm text-muted-foreground">AI will speak questions aloud</p>
               </div>
               <button
                 onClick={toggleAudio}
-                className="p-3 rounded-lg border border-gray-300 hover:bg-white transition-colors"
+                className="p-3 rounded-lg border border-border/50 hover:bg-background/50 transition-colors"
               >
-                {isAudioEnabled ? <Volume2 className="h-5 w-5 text-green-600" /> : <VolumeX className="h-5 w-5 text-gray-400" />}
+                {isAudioEnabled ? <Volume2 className="h-5 w-5 text-green-600" /> : <VolumeX className="h-5 w-5 text-muted-foreground" />}
               </button>
             </div>
             
@@ -484,7 +485,7 @@ const VoiceInterview = ({ onNavigate }: VoiceInterviewProps) => {
           </Card>
         </div>
       )}
-      
+      </div>
       <Footer onNavigate={onNavigate} />
     </div>
   );
