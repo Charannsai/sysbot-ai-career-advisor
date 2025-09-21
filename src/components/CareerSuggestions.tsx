@@ -270,7 +270,7 @@ Respond with ONLY valid JSON array:
                   </div>
                   
                   <Accordion type="single" collapsible className="w-full">
-                    <AccordionItem value="roadmap" className="border border-gray-200 rounded-lg px-4">
+                    <AccordionItem value="roadmap" className="border border-border/50 rounded-lg px-4">
                       <AccordionTrigger className="text-left hover:no-underline py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -282,7 +282,7 @@ Respond with ONLY valid JSON array:
                       <AccordionContent className="pb-4">
                         <div className="space-y-4 pt-2">
                           {career.roadmap.map((step: string, i: number) => (
-                            <div key={i} className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg border border-gray-100">
+                            <div key={i} className="flex items-start gap-4 p-4 bg-muted/50 rounded-lg border border-border/30">
                               <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 mt-0.5">
                                 {i + 1}
                               </div>
@@ -293,7 +293,7 @@ Respond with ONLY valid JSON array:
                       </AccordionContent>
                     </AccordionItem>
                     
-                    <AccordionItem value="resources" className="border border-gray-200 rounded-lg px-4 mt-2">
+                    <AccordionItem value="resources" className="border border-border/50 rounded-lg px-4 mt-2">
                       <AccordionTrigger className="text-left hover:no-underline py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -306,12 +306,12 @@ Respond with ONLY valid JSON array:
                         <div className="grid gap-4 pt-2">
                           {career.resources && career.resources.length > 0 ? (
                             career.resources.map((resource: any, i: number) => (
-                              <div key={i} className="p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:shadow-sm transition-all duration-200">
+                              <div key={i} className="p-4 border border-border/50 rounded-lg hover:border-primary/50 hover:shadow-sm transition-all duration-200">
                                 <div className="flex items-start justify-between gap-3">
                                   <div className="flex-1">
                                     <div className="flex items-center gap-3 mb-2">
                                       <h5 className="font-semibold text-foreground">{resource.name}</h5>
-                                      <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded">
+                                      <span className="px-2 py-1 bg-muted text-muted-foreground text-xs font-medium rounded">
                                         {resource.type}
                                       </span>
                                     </div>
@@ -330,7 +330,7 @@ Respond with ONLY valid JSON array:
                               </div>
                             ))
                           ) : (
-                            <div className="p-6 text-center text-muted-foreground bg-gray-50 rounded-lg">
+                            <div className="p-6 text-center text-muted-foreground bg-muted/50 rounded-lg">
                               <p>Resources are being curated for this career path.</p>
                             </div>
                           )}
