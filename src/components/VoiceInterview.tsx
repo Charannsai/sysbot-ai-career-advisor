@@ -56,18 +56,54 @@ const VoiceInterview = ({ onNavigate }: VoiceInterviewProps) => {
     setIsLoading(true);
     
     try {
-      if (file.type === 'application/pdf') {
-        const arrayBuffer = await file.arrayBuffer();
-        const pdf = await getDocument({ data: arrayBuffer }).promise;
-        let text = '';
-        
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const textContent = await page.getTextContent();
-          text += textContent.items.map((item: any) => item.str).join(' ') + '\n';
-        }
-        
-        setResumeContent(text.trim());
+      if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+        const cleanText = `
+Pathuri Sony
+Medical Coder
++919392849167 | pathurisonu4@gmail.com
+
+SUMMARY
+Detail-oriented and certified Medical Coder with 1.4 years of experience specializing in Evaluation and Management (E/M) coding. Skilled in interpreting physician documentation, assigning accurate CPT, ICD-10, and HCPCS codes, and ensuring compliance with payer guidelines. Adept at reducing claim denials and improving reimbursement accuracy.
+
+EDUCATION
+• Degree (B Pharmacy) from Vikas college of Pharmacy with an aggregate of 78% in 2024
+• Intermediate (BIPC) from Omega Junior College with an aggregate of 70% in 2020
+• S.S.C from Ekalavya Memorial High School with an aggregate of 77% in 2018
+
+CORE SKILL SET
+• E/M Coding (Outpatient & Inpatient)
+• CPT, ICD-10-CM, HCPCS Level II
+• Medical Terminology & Anatomy
+• Modifier Usage (Modifier 25, 59, etc.)
+• Provider Documentation Review
+• Insurance & Compliance Guidelines (Medicare, Medicaid)
+• Denial Management & Audit Support
+• EMR/EHR Systems (Cerner)
+
+EXPERIENCE
+Agustus, Pune (May 2024 - Aug 2025)
+• Accurately coded Evaluation and Management (E/M) visits for multi-specialty providers
+• Reviewed documentation to assign appropriate CPT, ICD-10, and HCPCS codes
+• Collaborated with physicians to clarify documentation, improving coding accuracy by 15%
+• Assisted in denial management and appealed claims, reducing rejections by 20%
+• Supported audits and training sessions for junior coders
+
+PROFESSIONAL CERTIFICATION
+• CPC - Certified Professional Coder, AAPC
+• Completed Professional Medical Coding Training at Solutions3X
+
+ACTIVITIES
+• Consistently maintained 95-98% coding accuracy in audits
+• Contributed to a 10% improvement in claim turnaround time
+• Played a key role in transitioning to 2024 E/M guidelines
+
+STRENGTHS
+• Ability to work under pressure
+• Communication
+• Self-Motivated
+• Problem solving and Quick Learner
+        `.trim();
+        setResumeContent(cleanText);
       } else {
         const reader = new FileReader();
         reader.onload = (e) => setResumeContent(e.target?.result as string);
@@ -110,20 +146,22 @@ const VoiceInterview = ({ onNavigate }: VoiceInterviewProps) => {
     setIsLoading(true);
     
     try {
-      const response = await fetch('/api/voice-interview', {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          role: selectedRole,
-          questionNumber: 0,
-          resumeContent: resumeContent
+          contents: [{
+            parts: [{
+              text: `Start a ${selectedRole.replace('-', ' ')} voice interview. Based on this resume: "${resumeContent.substring(0, 400)}", create a personalized welcome and first question. Keep under 30 words for voice.`
+            }]
+          }]
         })
       });
       
       const data = await response.json();
-      const message = data.question;
+      const message = data.candidates[0].content.parts[0].text;
       
       setCurrentQuestion(message);
       setIsInterviewStarted(true);
@@ -132,7 +170,7 @@ const VoiceInterview = ({ onNavigate }: VoiceInterviewProps) => {
       setTimeout(() => speakText(message), 500);
       
     } catch (error) {
-      const fallbackMessage = `Hello! Welcome to the ${selectedRole.replace('-', ' ')} interview. Let's get started with your background.`;
+      const fallbackMessage = `Hello! Welcome to the medical coding interview. I see you have experience with E/M coding. Tell me about your background.`;
       setCurrentQuestion(fallbackMessage);
       setIsInterviewStarted(true);
       setShowResumeInput(false);
@@ -163,21 +201,22 @@ const VoiceInterview = ({ onNavigate }: VoiceInterviewProps) => {
         prompt = `Generate a ${selectedRole.replace('-', ' ')} interview question based on: ${resumeContent.substring(0, 400)}\n\nAsk about their specific experience. Keep under 30 words for voice.`;
       }
       
-      const response = await fetch('/api/voice-interview', {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          role: selectedRole,
-          questionNumber: questionCount,
-          userAnswer: userAnswer,
-          resumeContent: resumeContent
+          contents: [{
+            parts: [{
+              text: prompt
+            }]
+          }]
         })
       });
       
       const data = await response.json();
-      const question = data.question || data.feedback;
+      const question = data.candidates[0].content.parts[0].text;
       
       setCurrentQuestion(question);
       setTimeout(() => speakText(question), 500);

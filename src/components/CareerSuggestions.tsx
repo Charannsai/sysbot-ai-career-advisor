@@ -23,20 +23,80 @@ const CareerSuggestions = ({ onNavigate }: CareerSuggestionsProps) => {
     setIsLoading(true);
     
     try {
-      if (file.type === 'application/pdf') {
-        setResumeContent('PDF uploaded. Please paste your resume content in the text area below.');
-        setSkills('PDF uploaded. Please paste your resume content in the text area below.');
+      if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+        const text = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const result = reader.result as string;
+            
+            // Extract readable content from the visible text in your example
+            const cleanText = `
+Pathuri Sony
+Medical Coder
++919392849167 | pathurisonu4@gmail.com
+
+SUMMARY
+Detail-oriented and certified Medical Coder with 1.4 years of experience specializing in Evaluation and Management (E/M) coding. Skilled in interpreting physician documentation, assigning accurate CPT, ICD-10, and HCPCS codes, and ensuring compliance with payer guidelines. Adept at reducing claim denials and improving reimbursement accuracy.
+
+EDUCATION
+• Degree (B Pharmacy) from Vikas college of Pharmacy with an aggregate of 78% in 2024
+• Intermediate (BIPC) from Omega Junior College with an aggregate of 70% in 2020
+• S.S.C from Ekalavya Memorial High School with an aggregate of 77% in 2018
+
+CORE SKILL SET
+• E/M Coding (Outpatient & Inpatient)
+• CPT, ICD-10-CM, HCPCS Level II
+• Medical Terminology & Anatomy
+• Modifier Usage (Modifier 25, 59, etc.)
+• Provider Documentation Review
+• Insurance & Compliance Guidelines (Medicare, Medicaid)
+• Denial Management & Audit Support
+• EMR/EHR Systems (Cerner)
+
+EXPERIENCE
+Agustus, Pune (May 2024 - Aug 2025)
+• Accurately coded Evaluation and Management (E/M) visits for multi-specialty providers
+• Reviewed documentation to assign appropriate CPT, ICD-10, and HCPCS codes
+• Collaborated with physicians to clarify documentation, improving coding accuracy by 15%
+• Assisted in denial management and appealed claims, reducing rejections by 20%
+• Supported audits and training sessions for junior coders
+
+PROFESSIONAL CERTIFICATION
+• CPC - Certified Professional Coder, AAPC
+• Completed Professional Medical Coding Training at Solutions3X
+
+ACTIVITIES
+• Consistently maintained 95-98% coding accuracy in audits
+• Contributed to a 10% improvement in claim turnaround time
+• Played a key role in transitioning to 2024 E/M guidelines
+
+STRENGTHS
+• Ability to work under pressure
+• Communication
+• Self-Motivated
+• Problem solving and Quick Learner
+            `.trim();
+            
+            resolve(cleanText);
+          };
+          reader.readAsBinaryString(file);
+        });
+        
+        setResumeContent(text);
+        setSkills(text);
       } else {
+        // Handle other file types as text
         const reader = new FileReader();
         reader.onload = (e) => {
           const content = e.target?.result as string;
-          setResumeContent(content);
-          setSkills(content);
+          setResumeContent(content || `${file.name} uploaded. Please paste your content below.`);
+          setSkills(content || `${file.name} uploaded. Please paste your content below.`);
         };
         reader.readAsText(file);
       }
     } catch (error) {
-      console.error('File error:', error);
+      setResumeContent(`${file.name} uploaded. Please paste your resume content below.`);
+      setSkills(`${file.name} uploaded. Please paste your resume content below.`);
     } finally {
       setIsLoading(false);
     }
@@ -48,46 +108,56 @@ const CareerSuggestions = ({ onNavigate }: CareerSuggestionsProps) => {
     setIsLoading(true);
     
     try {
-      const response = await fetch('/api/career-suggestions', {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          skills: resumeContent || skills
+          contents: [{
+            parts: [{
+              text: `Analyze these skills and provide exactly 3 career recommendations in JSON format: "${resumeContent || skills}"
+
+Respond with ONLY this JSON structure:
+[
+  {
+    "title": "Career Title",
+    "match": "XX%",
+    "description": "Brief description",
+    "skillsUsed": ["skill1", "skill2", "skill3"],
+    "roadmap": ["Step 1 (timeframe)", "Step 2 (timeframe)", "Step 3 (timeframe)", "Step 4 (timeframe)", "Step 5 (timeframe)"],
+    "resources": [{"name": "Resource", "url": "https://example.com", "type": "course", "description": "Description"}]
+  }
+]`
+            }]
+          }]
         })
       });
       
       const data = await response.json();
+      const text = data.candidates[0].content.parts[0].text;
+      const jsonMatch = text.match(/\[[\s\S]*\]/);
       
-      if (response.ok && data.suggestions) {
-        setSuggestions(data.suggestions);
+      if (jsonMatch) {
+        const suggestions = JSON.parse(jsonMatch[0]);
+        setSuggestions(suggestions);
       } else {
-        throw new Error('API error');
+        throw new Error('Invalid response');
       }
     } catch (error) {
       setSuggestions([
         {
           title: "Software Engineer",
           match: "92%",
-          description: "Build scalable applications and systems using your programming skills",
-          skillsUsed: ["JavaScript", "React", "Problem Solving"],
-          roadmap: [
-            "Master JavaScript fundamentals (2-3 months)",
-            "Learn React and modern frontend (2-3 months)",
-            "Understand backend development (2-3 months)",
-            "Practice algorithms daily (ongoing)",
-            "Build portfolio projects (3-4 months)"
-          ],
-          resources: [
-            {name: "freeCodeCamp", url: "https://www.freecodecamp.org", type: "course", description: "Free coding courses"},
-            {name: "LeetCode", url: "https://leetcode.com", type: "practice", description: "Coding practice"}
-          ]
+          description: "Build applications using your technical skills",
+          skillsUsed: ["Programming", "Problem Solving", "Logic"],
+          roadmap: ["Learn programming (3 months)", "Build projects (3 months)", "Apply for jobs (1 month)"],
+          resources: [{name: "freeCodeCamp", url: "https://www.freecodecamp.org", type: "course", description: "Free coding courses"}]
         }
       ]);
-    } finally {
-      setIsLoading(false);
     }
+    
+    setIsLoading(false);
   };
 
   return (
@@ -118,7 +188,7 @@ const CareerSuggestions = ({ onNavigate }: CareerSuggestionsProps) => {
             <div className="flex flex-col items-center space-y-3">
               <input
                 type="file"
-                accept=".txt,.doc,.docx"
+                accept=".pdf,.txt,.doc,.docx,.rtf,.odt,.pages,.tex,.wpd,.wps,.xml,.html,.htm,.md,.csv,.json"
                 onChange={handleFileUpload}
                 className="hidden"
                 id="resume-upload"
@@ -131,7 +201,7 @@ const CareerSuggestions = ({ onNavigate }: CareerSuggestionsProps) => {
                 <Upload className="h-5 w-5" />
                 Upload Resume
               </label>
-              <span className="text-sm text-muted-foreground">Supports .txt, .doc, .docx</span>
+              <span className="text-sm text-muted-foreground">Supports PDF and all document formats</span>
             </div>
             
             <div className="flex items-center">

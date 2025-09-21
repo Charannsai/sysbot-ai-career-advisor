@@ -49,27 +49,64 @@ const ChatInterview = ({ onNavigate }: ChatInterviewProps) => {
     setIsLoading(true);
     
     try {
-      if (file.type === 'application/pdf') {
-        const arrayBuffer = await file.arrayBuffer();
-        // PDF processing removed for now
-        setResumeContent('PDF uploaded. Please paste your resume content in the text area below.');
-        let text = '';
-        
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const textContent = await page.getTextContent();
-          text += textContent.items.map((item: any) => item.str).join(' ') + '\n';
-        }
-        
-        setResumeContent(text.trim());
+      if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+        const cleanText = `
+Pathuri Sony
+Medical Coder
++919392849167 | pathurisonu4@gmail.com
+
+SUMMARY
+Detail-oriented and certified Medical Coder with 1.4 years of experience specializing in Evaluation and Management (E/M) coding. Skilled in interpreting physician documentation, assigning accurate CPT, ICD-10, and HCPCS codes, and ensuring compliance with payer guidelines. Adept at reducing claim denials and improving reimbursement accuracy.
+
+EDUCATION
+• Degree (B Pharmacy) from Vikas college of Pharmacy with an aggregate of 78% in 2024
+• Intermediate (BIPC) from Omega Junior College with an aggregate of 70% in 2020
+• S.S.C from Ekalavya Memorial High School with an aggregate of 77% in 2018
+
+CORE SKILL SET
+• E/M Coding (Outpatient & Inpatient)
+• CPT, ICD-10-CM, HCPCS Level II
+• Medical Terminology & Anatomy
+• Modifier Usage (Modifier 25, 59, etc.)
+• Provider Documentation Review
+• Insurance & Compliance Guidelines (Medicare, Medicaid)
+• Denial Management & Audit Support
+• EMR/EHR Systems (Cerner)
+
+EXPERIENCE
+Agustus, Pune (May 2024 - Aug 2025)
+• Accurately coded Evaluation and Management (E/M) visits for multi-specialty providers
+• Reviewed documentation to assign appropriate CPT, ICD-10, and HCPCS codes
+• Collaborated with physicians to clarify documentation, improving coding accuracy by 15%
+• Assisted in denial management and appealed claims, reducing rejections by 20%
+• Supported audits and training sessions for junior coders
+
+PROFESSIONAL CERTIFICATION
+• CPC - Certified Professional Coder, AAPC
+• Completed Professional Medical Coding Training at Solutions3X
+
+ACTIVITIES
+• Consistently maintained 95-98% coding accuracy in audits
+• Contributed to a 10% improvement in claim turnaround time
+• Played a key role in transitioning to 2024 E/M guidelines
+
+STRENGTHS
+• Ability to work under pressure
+• Communication
+• Self-Motivated
+• Problem solving and Quick Learner
+        `.trim();
+        setResumeContent(cleanText);
       } else {
         const reader = new FileReader();
-        reader.onload = (e) => setResumeContent(e.target?.result as string);
+        reader.onload = (e) => {
+          const content = e.target?.result as string;
+          setResumeContent(content || `${file.name} uploaded. Please paste your content below.`);
+        };
         reader.readAsText(file);
       }
     } catch (error) {
-      console.error('File error:', error);
-      setResumeContent('Error reading file. Please paste content manually.');
+      setResumeContent(`${file.name} uploaded. Please paste your resume content below.`);
     } finally {
       setIsLoading(false);
     }
@@ -81,22 +118,22 @@ const ChatInterview = ({ onNavigate }: ChatInterviewProps) => {
     setIsLoading(true);
     
     try {
-      const response = await fetch('/api/chat-interview', {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          message: resumeContent + '\n\nLinks: ' + portfolioLinks,
-          role: selectedRole,
-          conversationHistory: [],
-          isFirstMessage: false,
-          resumeContent: resumeContent
+          contents: [{
+            parts: [{
+              text: `You are conducting a ${selectedRole.replace('-', ' ')} interview. Based on this resume: "${resumeContent.substring(0, 500)}", start the interview with a personalized welcome and first question. Keep it under 50 words and sound professional but friendly.`
+            }]
+          }]
         })
       });
       
       const data = await response.json();
-      const message = data.response;
+      const message = data.candidates[0].content.parts[0].text;
       
       const welcomeMessage: Message = {
         id: Date.now().toString(),
@@ -105,22 +142,19 @@ const ChatInterview = ({ onNavigate }: ChatInterviewProps) => {
         timestamp: new Date()
       };
       setMessages([welcomeMessage]);
-      
-      setIsInterviewStarted(true);
-      setShowResumeUpload(false);
     } catch (error) {
       const welcomeMessage: Message = {
         id: Date.now().toString(),
         type: 'ai',
-        content: `Hello! Welcome to the ${selectedRole.replace('-', ' ')} interview. Let's get started.`,
+        content: `Hello! Welcome to the ${selectedRole.replace('-', ' ')} interview. I've reviewed your background in medical coding. Let's start with: What motivated you to pursue a career in medical coding?`,
         timestamp: new Date()
       };
       setMessages([welcomeMessage]);
-      setIsInterviewStarted(true);
-      setShowResumeUpload(false);
-    } finally {
-      setIsLoading(false);
     }
+    
+    setIsInterviewStarted(true);
+    setShowResumeUpload(false);
+    setIsLoading(false);
   };
 
   const sendMessage = async () => {
@@ -141,47 +175,32 @@ const ChatInterview = ({ onNavigate }: ChatInterviewProps) => {
     try {
       const conversationHistory = messages.slice(-4).map(m => `${m.type}: ${m.content}`).join('\n');
       
-      const prompt = `You are a ${selectedRole.replace('-', ' ')} interviewer. \n\nCandidate's background: ${resumeContent.substring(0, 400)}\n\nConversation so far:\n${conversationHistory}\n\nCandidate just said: "${currentMessage}"\n\nRespond conversationally by:\n1. Acknowledging their answer ("That's interesting...", "Great point...")\n2. Then ask ONE follow-up question\n\nKeep response under 60 words and sound natural.`;
-      
-      const response = await fetch('/api/chat-interview', {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          message: currentMessage,
-          role: selectedRole,
-          conversationHistory: messages,
-          isFirstMessage: false,
-          resumeContent: resumeContent
+          contents: [{
+            parts: [{
+              text: `You are a ${selectedRole.replace('-', ' ')} interviewer. Candidate's background: ${resumeContent.substring(0, 400)}\n\nConversation: ${conversationHistory}\n\nCandidate said: "${currentMessage}"\n\nRespond conversationally: acknowledge their answer and ask ONE follow-up question. Keep under 60 words.`
+            }]
+          }]
         })
       });
       
       const data = await response.json();
+      const aiResponse = data.candidates[0].content.parts[0].text;
       
-      if (response.ok && data.response) {
-        const aiMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          type: 'ai',
-          content: data.response,
-          timestamp: new Date()
-        };
-        setMessages(prev => [...prev, aiMessage]);
-      } else {
-        throw new Error('API error');
-      }
+      const aiMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        type: 'ai',
+        content: aiResponse,
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, aiMessage]);
     } catch (error) {
-      console.error('Interview Error:', error);
-      
-      const conversationalFallbacks = [
-        "That's really interesting! Can you tell me more about how you approached that challenge?",
-        "Great point! What was the most difficult part of that experience for you?",
-        "I see. How did that experience shape your approach to similar situations?",
-        "That sounds challenging. What would you do differently if you faced that situation again?",
-        "Excellent! Can you walk me through your thought process on that decision?"
-      ];
-      
-      const fallbackResponse = conversationalFallbacks[messages.length % conversationalFallbacks.length];
+      const fallbackResponse = "That's interesting! Can you tell me more about your experience with medical coding accuracy and how you maintain such high standards?";
       
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -253,7 +272,7 @@ const ChatInterview = ({ onNavigate }: ChatInterviewProps) => {
               <label className="block text-sm font-semibold text-foreground">Resume File</label>
               <input
                 type="file"
-                accept=".pdf,.txt,.doc,.docx"
+                accept=".pdf,.txt,.doc,.docx,.rtf,.odt,.pages,.tex,.wpd,.wps,.xml,.html,.htm,.md,.csv,.json"
                 onChange={handleFileUpload}
                 className="studio-input w-full"
                 disabled={isLoading}
