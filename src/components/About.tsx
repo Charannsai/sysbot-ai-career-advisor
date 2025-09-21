@@ -33,19 +33,19 @@ const About = ({ onNavigate }: AboutProps) => {
   return (
     <div className="min-h-screen flex flex-col">
       <div className="flex-1 max-w-4xl mx-auto w-full px-4 py-8">
-        {/* Hero Section */
-      <div className="text-center space-y-6 pt-8">
-        <div className="space-y-4">
-          <h1 className="text-5xl font-bold text-foreground tracking-tight">
-            Welcome to <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">SysBot</span>
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            Your AI-powered career companion that helps you discover ideal career paths and master interview skills with personalized guidance.
-          </p>
+        {/* Hero Section */}
+        <div className="text-center space-y-6 mb-12">
+          <div className="space-y-4">
+            <h1 className="text-5xl font-bold text-foreground tracking-tight">
+              Welcome to <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">SysBot</span>
+            </h1>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+              Your AI-powered career companion that helps you discover ideal career paths and master interview skills with personalized guidance.
+            </p>
+          </div>
         </div>
-      </div>
 
-      {/* About Section */}
+        {/* About Section */}
       <div className="studio-card p-10 space-y-8">
         <div className="text-center space-y-4">
           <h2 className="text-3xl font-bold text-foreground">About SysBot - AI Career Studio</h2>
