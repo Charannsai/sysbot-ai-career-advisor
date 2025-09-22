@@ -219,7 +219,7 @@ const ChatInterview = ({ onNavigate }: ChatInterviewProps) => {
                 placeholder="Paste your resume content here..."
                 value={resumeContent}
                 onChange={(e) => setResumeContent(e.target.value)}
-                className="studio-input min-h-[200px] resize-none"
+                className="studio-input min-h-[250px] resize-none w-full"
               />
             </div>
             

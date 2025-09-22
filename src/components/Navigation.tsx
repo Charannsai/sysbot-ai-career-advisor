@@ -1,4 +1,5 @@
-import { Home, Lightbulb, MessageCircle, Mic } from "lucide-react";
+import { Lightbulb, MessageCircle, Mic } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
 
 interface NavigationProps {
   activeTab: string;
@@ -6,12 +7,9 @@ interface NavigationProps {
 }
 
 const Navigation = ({ activeTab, onTabChange }: NavigationProps) => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const tabs = [
-    {
-      id: 'about',
-      label: 'About',
-      icon: Home
-    },
     {
       id: 'career',
       label: 'Career Discovery',
@@ -38,7 +36,10 @@ const Navigation = ({ activeTab, onTabChange }: NavigationProps) => {
         return (
           <button
             key={tab.id}
-            onClick={() => onTabChange(tab.id)}
+            onClick={() => {
+              onTabChange(tab.id);
+              navigate(`/${tab.id}`);
+            }}
             className={`studio-nav-item w-full ${
               isActive ? 'studio-nav-active' : ''
             }`}

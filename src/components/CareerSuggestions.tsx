@@ -124,7 +124,7 @@ Respond with ONLY this JSON structure:
             placeholder="Share your skills, experience, education, or paste your resume content here...\n\nExample: JavaScript, React, Node.js, problem-solving, teamwork, project management, data analysis, Bachelor's in Computer Science, 3 years experience in web development..."
             value={skills}
             onChange={(e) => setSkills(e.target.value)}
-            className="studio-input min-h-[160px] resize-none text-base leading-relaxed"
+            className="studio-input min-h-[200px] resize-none text-base leading-relaxed w-full"
           />
           
           <div className="flex justify-center pt-4">
