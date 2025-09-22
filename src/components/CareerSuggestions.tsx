@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { BookOpen, Loader2, ExternalLink, Link, Upload } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import Footer from "@/components/Footer";
+import { extractTextFromFile } from "@/lib/pdfUtils";
 
 interface CareerSuggestionsProps {
   onNavigate?: (tab: string) => void;
@@ -23,77 +24,9 @@ const CareerSuggestions = ({ onNavigate }: CareerSuggestionsProps) => {
     setIsLoading(true);
     
     try {
-      if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
-        const text = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onload = () => {
-            const result = reader.result as string;
-            
-            // Extract readable content from the visible text in your example
-            const cleanText = `
-Pathuri Sony
-Medical Coder
-+919392849167 | pathurisonu4@gmail.com
-
-SUMMARY
-Detail-oriented and certified Medical Coder with 1.4 years of experience specializing in Evaluation and Management (E/M) coding. Skilled in interpreting physician documentation, assigning accurate CPT, ICD-10, and HCPCS codes, and ensuring compliance with payer guidelines. Adept at reducing claim denials and improving reimbursement accuracy.
-
-EDUCATION
-• Degree (B Pharmacy) from Vikas college of Pharmacy with an aggregate of 78% in 2024
-• Intermediate (BIPC) from Omega Junior College with an aggregate of 70% in 2020
-• S.S.C from Ekalavya Memorial High School with an aggregate of 77% in 2018
-
-CORE SKILL SET
-• E/M Coding (Outpatient & Inpatient)
-• CPT, ICD-10-CM, HCPCS Level II
-• Medical Terminology & Anatomy
-• Modifier Usage (Modifier 25, 59, etc.)
-• Provider Documentation Review
-• Insurance & Compliance Guidelines (Medicare, Medicaid)
-• Denial Management & Audit Support
-• EMR/EHR Systems (Cerner)
-
-EXPERIENCE
-Agustus, Pune (May 2024 - Aug 2025)
-• Accurately coded Evaluation and Management (E/M) visits for multi-specialty providers
-• Reviewed documentation to assign appropriate CPT, ICD-10, and HCPCS codes
-• Collaborated with physicians to clarify documentation, improving coding accuracy by 15%
-• Assisted in denial management and appealed claims, reducing rejections by 20%
-• Supported audits and training sessions for junior coders
-
-PROFESSIONAL CERTIFICATION
-• CPC - Certified Professional Coder, AAPC
-• Completed Professional Medical Coding Training at Solutions3X
-
-ACTIVITIES
-• Consistently maintained 95-98% coding accuracy in audits
-• Contributed to a 10% improvement in claim turnaround time
-• Played a key role in transitioning to 2024 E/M guidelines
-
-STRENGTHS
-• Ability to work under pressure
-• Communication
-• Self-Motivated
-• Problem solving and Quick Learner
-            `.trim();
-            
-            resolve(cleanText);
-          };
-          reader.readAsBinaryString(file);
-        });
-        
-        setResumeContent(text);
-        setSkills(text);
-      } else {
-        // Handle other file types as text
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const content = e.target?.result as string;
-          setResumeContent(content || `${file.name} uploaded. Please paste your content below.`);
-          setSkills(content || `${file.name} uploaded. Please paste your content below.`);
-        };
-        reader.readAsText(file);
-      }
+      const extractedText = await extractTextFromFile(file);
+      setResumeContent(extractedText);
+      setSkills(extractedText);
     } catch (error) {
       setResumeContent(`${file.name} uploaded. Please paste your resume content below.`);
       setSkills(`${file.name} uploaded. Please paste your resume content below.`);
@@ -177,45 +110,11 @@ Respond with ONLY this JSON structure:
 
         {/* Input Section */}
       <div className="studio-card p-10 space-y-8">
-        {/* Upload Section */}
+        {/* Input Section */}
         <div className="text-center space-y-6">
           <div className="space-y-2">
             <h2 className="text-2xl font-semibold text-foreground">Get Started</h2>
-            <p className="text-muted-foreground">Choose how you'd like to share your information</p>
-          </div>
-          
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
-            <div className="flex flex-col items-center space-y-3">
-              <input
-                type="file"
-                accept=".pdf,.txt,.doc,.docx,.rtf,.odt,.pages,.tex,.wpd,.wps,.xml,.html,.htm,.md,.csv,.json"
-                onChange={handleFileUpload}
-                className="hidden"
-                id="resume-upload"
-                disabled={isLoading}
-              />
-              <label
-                htmlFor="resume-upload"
-                className="studio-button cursor-pointer inline-flex items-center gap-3 px-8 py-4 text-base"
-              >
-                <Upload className="h-5 w-5" />
-                Upload Resume
-              </label>
-              <span className="text-sm text-muted-foreground">Supports PDF and all document formats</span>
-            </div>
-            
-            <div className="flex items-center">
-              <div className="w-16 h-px bg-border"></div>
-              <span className="px-4 text-sm text-muted-foreground font-medium">OR</span>
-              <div className="w-16 h-px bg-border"></div>
-            </div>
-            
-            <div className="flex flex-col items-center space-y-3">
-              <div className="text-center">
-                <div className="text-base font-medium text-foreground">Type Manually</div>
-                <span className="text-sm text-muted-foreground">Enter your skills below</span>
-              </div>
-            </div>
+            <p className="text-muted-foreground">Share your skills and experience to get personalized recommendations</p>
           </div>
         </div>
         
@@ -232,7 +131,7 @@ Respond with ONLY this JSON structure:
             <button 
               onClick={handleSubmit} 
               className="studio-button px-12 py-4 text-base font-semibold"
-              disabled={(!skills.trim() && !resumeContent.trim()) || isLoading}
+              disabled={!skills.trim() || isLoading}
             >
               {isLoading ? (
                 <>

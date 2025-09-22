@@ -6,6 +6,7 @@ import { Mic, MicOff, Volume2, VolumeX, Play, Square, Briefcase } from "lucide-r
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Footer from "@/components/Footer";
+import { extractTextFromFile } from "@/lib/pdfUtils";
 
 interface VoiceInterviewProps {
   onNavigate?: (tab: string) => void;
@@ -21,10 +22,10 @@ const VoiceInterview = ({ onNavigate }: VoiceInterviewProps) => {
   const [transcript, setTranscript] = useState("");
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
   const [recognition, setRecognition] = useState<any>(null);
-  const [resumeContent, setResumeContent] = useState("");
-  const [portfolioLinks, setPortfolioLinks] = useState("");
-  const [showResumeInput, setShowResumeInput] = useState(false);
+
   const [isLoading, setIsLoading] = useState(false);
+  const [resumeContent, setResumeContent] = useState("");
+  const [showResumeInput, setShowResumeInput] = useState(false);
 
   useEffect(() => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -56,59 +57,8 @@ const VoiceInterview = ({ onNavigate }: VoiceInterviewProps) => {
     setIsLoading(true);
     
     try {
-      if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
-        const cleanText = `
-Pathuri Sony
-Medical Coder
-+919392849167 | pathurisonu4@gmail.com
-
-SUMMARY
-Detail-oriented and certified Medical Coder with 1.4 years of experience specializing in Evaluation and Management (E/M) coding. Skilled in interpreting physician documentation, assigning accurate CPT, ICD-10, and HCPCS codes, and ensuring compliance with payer guidelines. Adept at reducing claim denials and improving reimbursement accuracy.
-
-EDUCATION
-• Degree (B Pharmacy) from Vikas college of Pharmacy with an aggregate of 78% in 2024
-• Intermediate (BIPC) from Omega Junior College with an aggregate of 70% in 2020
-• S.S.C from Ekalavya Memorial High School with an aggregate of 77% in 2018
-
-CORE SKILL SET
-• E/M Coding (Outpatient & Inpatient)
-• CPT, ICD-10-CM, HCPCS Level II
-• Medical Terminology & Anatomy
-• Modifier Usage (Modifier 25, 59, etc.)
-• Provider Documentation Review
-• Insurance & Compliance Guidelines (Medicare, Medicaid)
-• Denial Management & Audit Support
-• EMR/EHR Systems (Cerner)
-
-EXPERIENCE
-Agustus, Pune (May 2024 - Aug 2025)
-• Accurately coded Evaluation and Management (E/M) visits for multi-specialty providers
-• Reviewed documentation to assign appropriate CPT, ICD-10, and HCPCS codes
-• Collaborated with physicians to clarify documentation, improving coding accuracy by 15%
-• Assisted in denial management and appealed claims, reducing rejections by 20%
-• Supported audits and training sessions for junior coders
-
-PROFESSIONAL CERTIFICATION
-• CPC - Certified Professional Coder, AAPC
-• Completed Professional Medical Coding Training at Solutions3X
-
-ACTIVITIES
-• Consistently maintained 95-98% coding accuracy in audits
-• Contributed to a 10% improvement in claim turnaround time
-• Played a key role in transitioning to 2024 E/M guidelines
-
-STRENGTHS
-• Ability to work under pressure
-• Communication
-• Self-Motivated
-• Problem solving and Quick Learner
-        `.trim();
-        setResumeContent(cleanText);
-      } else {
-        const reader = new FileReader();
-        reader.onload = (e) => setResumeContent(e.target?.result as string);
-        reader.readAsText(file);
-      }
+      const extractedText = await extractTextFromFile(file);
+      setResumeContent(extractedText);
     } catch (error) {
       setResumeContent('Error reading file. Please paste content manually.');
     } finally {
@@ -170,7 +120,7 @@ STRENGTHS
       setTimeout(() => speakText(message), 500);
       
     } catch (error) {
-      const fallbackMessage = `Hello! Welcome to the medical coding interview. I see you have experience with E/M coding. Tell me about your background.`;
+      const fallbackMessage = `Hello! Welcome to the ${selectedRole.replace('-', ' ')} interview. Tell me about your background and experience.`;
       setCurrentQuestion(fallbackMessage);
       setIsInterviewStarted(true);
       setShowResumeInput(false);
@@ -194,12 +144,9 @@ STRENGTHS
         return;
       }
       
-      let prompt = '';
-      if (userAnswer) {
-        prompt = `You are a ${selectedRole.replace('-', ' ')} interviewer.\n\nCandidate's background: ${resumeContent.substring(0, 400)}\n\nThey just said: "${userAnswer}"\n\nRespond conversationally by acknowledging their answer and asking ONE follow-up question. Keep under 40 words for voice.`;
-      } else {
-        prompt = `Generate a ${selectedRole.replace('-', ' ')} interview question based on: ${resumeContent.substring(0, 400)}\n\nAsk about their specific experience. Keep under 30 words for voice.`;
-      }
+      const prompt = userAnswer 
+        ? `You are a ${selectedRole.replace('-', ' ')} interviewer. Candidate's background: ${resumeContent.substring(0, 400)}. They said: "${userAnswer}". Acknowledge and ask a follow-up question. Keep under 40 words for voice.`
+        : `Generate a ${selectedRole.replace('-', ' ')} interview question based on: ${resumeContent.substring(0, 400)}. Ask about their specific experience. Keep under 30 words for voice.`;
       
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`, {
         method: 'POST',
@@ -224,9 +171,10 @@ STRENGTHS
     } catch (error) {
       const fallbackQuestions = [
         "Tell me about a project you're proud of.",
-        "What's your biggest professional achievement?",
+        "What's your biggest professional achievement?", 
         "How do you handle challenging situations?",
-        "What motivates you in your work?"
+        "What motivates you in your work?",
+        "Describe your experience with teamwork."
       ];
       const fallback = fallbackQuestions[questionCount % fallbackQuestions.length];
       setCurrentQuestion(fallback);
@@ -262,7 +210,7 @@ STRENGTHS
     setQuestionCount(0);
     setTranscript("");
     setResumeContent("");
-    setPortfolioLinks("");
+    setShowResumeInput(false);
     speechSynthesis.cancel();
     if (recognition) recognition.stop();
   };
@@ -343,70 +291,46 @@ STRENGTHS
                 disabled={!selectedRole || !isWebSpeechSupported}
                 className="studio-button w-full py-4 text-base"
               >
-                Continue to Resume Upload
+                Continue
               </button>
             </div>
           </div>
         </div>
       ) : showResumeInput ? (
-        <Card className="glass-card border-0">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Briefcase className="h-5 w-5 text-primary" />
-              Upload Resume & Portfolio
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Resume File</label>
-              <input
-                type="file"
-                accept=".pdf,.txt,.doc,.docx"
-                onChange={handleFileUpload}
-                className="w-full p-2 border border-border/50 rounded-md bg-background/50"
-                disabled={isLoading}
-              />
-              {isLoading && <p className="text-xs text-muted-foreground">Processing file...</p>}
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Portfolio/Project Links</label>
+        <div className="studio-card p-10 space-y-8">
+          <div className="text-center space-y-2">
+            <h2 className="text-2xl font-semibold text-foreground">Share Your Resume</h2>
+            <p className="text-muted-foreground">Enter your resume content for a personalized {selectedRole.replace('-', ' ')} voice interview</p>
+          </div>
+          
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <label className="block text-sm font-semibold text-foreground">Resume Content</label>
               <textarea
-                placeholder="Paste your portfolio, GitHub, LinkedIn, or project links here..."
-                value={portfolioLinks}
-                onChange={(e) => setPortfolioLinks(e.target.value)}
-                className="w-full min-h-[80px] p-3 border border-border/50 rounded-md resize-none bg-background/50"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Resume Content</label>
-              <textarea
-                placeholder="Upload a file above or paste your resume content here..."
+                placeholder="Paste your resume content here..."
                 value={resumeContent}
                 onChange={(e) => setResumeContent(e.target.value)}
-                className="w-full min-h-[120px] p-3 border border-border/50 rounded-md resize-none bg-background/50"
+                className="studio-input min-h-[200px] resize-none"
               />
             </div>
             
-            <div className="flex gap-2">
-              <Button 
+            <div className="flex gap-4 pt-4">
+              <button 
                 onClick={() => setShowResumeInput(false)}
-                variant="outline"
-                className="flex-1"
+                className="flex-1 px-6 py-3 border border-border/50 text-muted-foreground rounded-xl font-medium hover:bg-muted/50 transition-colors"
               >
                 Back
-              </Button>
-              <Button 
+              </button>
+              <button 
                 onClick={beginInterview}
                 disabled={!resumeContent.trim() || isLoading}
-                className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground transition-colors"
+                className="studio-button flex-1"
               >
-                {isLoading ? 'Processing...' : 'Analyze & Start'}
-              </Button>
+                {isLoading ? 'Starting Interview...' : 'Start Interview'}
+              </button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       ) : (
         <div className="space-y-4">
           <div className="flex items-center justify-between">

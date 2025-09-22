@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { MessageCircle, Send, Bot, User, Briefcase } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Footer from "@/components/Footer";
+import { extractTextFromFile } from "@/lib/pdfUtils";
 
 interface ChatInterviewProps {
   onNavigate?: (tab: string) => void;
@@ -25,8 +26,6 @@ const ChatInterview = ({ onNavigate }: ChatInterviewProps) => {
   const [isInterviewStarted, setIsInterviewStarted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [resumeContent, setResumeContent] = useState("");
-  const [portfolioLinks, setPortfolioLinks] = useState("");
-  const [showResumeUpload, setShowResumeUpload] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -36,10 +35,11 @@ const ChatInterview = ({ onNavigate }: ChatInterviewProps) => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+  
+
 
   const handleRoleSelect = (role: string) => {
     setSelectedRole(role);
-    setShowResumeUpload(true);
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -49,62 +49,8 @@ const ChatInterview = ({ onNavigate }: ChatInterviewProps) => {
     setIsLoading(true);
     
     try {
-      if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
-        const cleanText = `
-Pathuri Sony
-Medical Coder
-+919392849167 | pathurisonu4@gmail.com
-
-SUMMARY
-Detail-oriented and certified Medical Coder with 1.4 years of experience specializing in Evaluation and Management (E/M) coding. Skilled in interpreting physician documentation, assigning accurate CPT, ICD-10, and HCPCS codes, and ensuring compliance with payer guidelines. Adept at reducing claim denials and improving reimbursement accuracy.
-
-EDUCATION
-• Degree (B Pharmacy) from Vikas college of Pharmacy with an aggregate of 78% in 2024
-• Intermediate (BIPC) from Omega Junior College with an aggregate of 70% in 2020
-• S.S.C from Ekalavya Memorial High School with an aggregate of 77% in 2018
-
-CORE SKILL SET
-• E/M Coding (Outpatient & Inpatient)
-• CPT, ICD-10-CM, HCPCS Level II
-• Medical Terminology & Anatomy
-• Modifier Usage (Modifier 25, 59, etc.)
-• Provider Documentation Review
-• Insurance & Compliance Guidelines (Medicare, Medicaid)
-• Denial Management & Audit Support
-• EMR/EHR Systems (Cerner)
-
-EXPERIENCE
-Agustus, Pune (May 2024 - Aug 2025)
-• Accurately coded Evaluation and Management (E/M) visits for multi-specialty providers
-• Reviewed documentation to assign appropriate CPT, ICD-10, and HCPCS codes
-• Collaborated with physicians to clarify documentation, improving coding accuracy by 15%
-• Assisted in denial management and appealed claims, reducing rejections by 20%
-• Supported audits and training sessions for junior coders
-
-PROFESSIONAL CERTIFICATION
-• CPC - Certified Professional Coder, AAPC
-• Completed Professional Medical Coding Training at Solutions3X
-
-ACTIVITIES
-• Consistently maintained 95-98% coding accuracy in audits
-• Contributed to a 10% improvement in claim turnaround time
-• Played a key role in transitioning to 2024 E/M guidelines
-
-STRENGTHS
-• Ability to work under pressure
-• Communication
-• Self-Motivated
-• Problem solving and Quick Learner
-        `.trim();
-        setResumeContent(cleanText);
-      } else {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const content = e.target?.result as string;
-          setResumeContent(content || `${file.name} uploaded. Please paste your content below.`);
-        };
-        reader.readAsText(file);
-      }
+      const extractedText = await extractTextFromFile(file);
+      setResumeContent(extractedText);
     } catch (error) {
       setResumeContent(`${file.name} uploaded. Please paste your resume content below.`);
     } finally {
@@ -112,7 +58,7 @@ STRENGTHS
     }
   };
 
-  const analyzeAndStartInterview = async () => {
+  const startInterview = async () => {
     if (!resumeContent.trim()) return;
     
     setIsLoading(true);
@@ -146,14 +92,13 @@ STRENGTHS
       const welcomeMessage: Message = {
         id: Date.now().toString(),
         type: 'ai',
-        content: `Hello! Welcome to the ${selectedRole.replace('-', ' ')} interview. I've reviewed your background in medical coding. Let's start with: What motivated you to pursue a career in medical coding?`,
+        content: `Hello! Welcome to the ${selectedRole.replace('-', ' ')} interview. Let's start with: What motivated you to pursue this career path?`,
         timestamp: new Date()
       };
       setMessages([welcomeMessage]);
     }
     
     setIsInterviewStarted(true);
-    setShowResumeUpload(false);
     setIsLoading(false);
   };
 
@@ -200,7 +145,7 @@ STRENGTHS
       };
       setMessages(prev => [...prev, aiMessage]);
     } catch (error) {
-      const fallbackResponse = "That's interesting! Can you tell me more about your experience with medical coding accuracy and how you maintain such high standards?";
+      const fallbackResponse = "That's interesting! Can you tell me more about your experience and how you handle challenging situations in your work?";
       
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -235,7 +180,7 @@ STRENGTHS
           </div>
         </div>
 
-      {!isInterviewStarted && !showResumeUpload ? (
+      {!isInterviewStarted && !selectedRole ? (
         <div className="studio-card p-10">
           <div className="text-center space-y-6">
             <div className="space-y-2">
@@ -260,59 +205,37 @@ STRENGTHS
             </div>
           </div>
         </div>
-      ) : showResumeUpload ? (
+      ) : selectedRole && !isInterviewStarted ? (
         <div className="studio-card p-10 space-y-8">
           <div className="text-center space-y-2">
-            <h2 className="text-2xl font-semibold text-foreground">Share Your Background</h2>
-            <p className="text-muted-foreground">Upload your resume or enter your information manually</p>
+            <h2 className="text-2xl font-semibold text-foreground">Share Your Resume</h2>
+            <p className="text-muted-foreground">Enter your resume content for a personalized {selectedRole.replace('-', ' ')} interview</p>
           </div>
           
           <div className="space-y-6">
             <div className="space-y-3">
-              <label className="block text-sm font-semibold text-foreground">Resume File</label>
-              <input
-                type="file"
-                accept=".pdf,.txt,.doc,.docx,.rtf,.odt,.pages,.tex,.wpd,.wps,.xml,.html,.htm,.md,.csv,.json"
-                onChange={handleFileUpload}
-                className="studio-input w-full"
-                disabled={isLoading}
-              />
-              {isLoading && <p className="text-sm text-blue-600">Processing file...</p>}
-            </div>
-            
-            <div className="space-y-3">
-              <label className="block text-sm font-semibold text-foreground">Portfolio/Project Links</label>
-              <textarea
-                placeholder="Share your portfolio, GitHub, LinkedIn, or project links..."
-                value={portfolioLinks}
-                onChange={(e) => setPortfolioLinks(e.target.value)}
-                className="studio-input min-h-[80px] resize-none"
-              />
-            </div>
-            
-            <div className="space-y-3">
               <label className="block text-sm font-semibold text-foreground">Resume Content</label>
               <textarea
-                placeholder="Paste your resume content here or upload a file above..."
+                placeholder="Paste your resume content here..."
                 value={resumeContent}
                 onChange={(e) => setResumeContent(e.target.value)}
-                className="studio-input min-h-[120px] resize-none"
+                className="studio-input min-h-[200px] resize-none"
               />
             </div>
             
             <div className="flex gap-4 pt-4">
               <button 
-                onClick={() => setShowResumeUpload(false)}
+                onClick={() => setSelectedRole("")}
                 className="flex-1 px-6 py-3 border border-border/50 text-muted-foreground rounded-xl font-medium hover:bg-muted/50 transition-colors"
               >
                 Back
               </button>
               <button 
-                onClick={analyzeAndStartInterview}
+                onClick={startInterview}
                 disabled={!resumeContent.trim() || isLoading}
                 className="studio-button flex-1"
               >
-                {isLoading ? 'Processing...' : 'Start Interview'}
+                {isLoading ? 'Starting Interview...' : 'Start Interview'}
               </button>
             </div>
           </div>
@@ -334,6 +257,7 @@ STRENGTHS
                 setIsInterviewStarted(false);
                 setMessages([]);
                 setSelectedRole("");
+                setResumeContent("");
               }}
               className="border-border/50 hover:border-primary transition-colors"
             >
